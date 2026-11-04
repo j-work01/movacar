@@ -30,25 +30,25 @@ calculated or guessed it. The one exception is country (see below).
 
 All columns come straight from the API, apart from the two country columns.
 
-| Column                                    | API field                                        | Shown by default |
-| ----------------------------------------- | ------------------------------------------------ | ---------------- |
-| From, To                                  | station `city` / `alternative_city`              | yes              |
-| From/To country                           | calculated from station coordinates              | yes              |
-| Vehicle                                   | `make` + `model`                                 | yes              |
-| Category                                  | `vehicle_category_name`                          | yes              |
-| Seats, Sleeps                             | `seats`, `sleeping`                              | yes              |
-| Earliest pick-up                          | `start_date`                                     | yes              |
-| Latest pick-up                            | `latest_pickup` or `valid_until` (open question) | yes              |
-| Return by                                 | `end_date`                                       | yes              |
-| Days included                             | `period` (hours)                                 | yes              |
-| Max days                                  | `extra_period` (hours)                           | yes              |
-| Free km                                   | `free_km`                                        | yes              |
-| €/extra km                                | `cents_per_extra_km`                             | yes              |
-| Route km                                  | `distance` (metres)                              | yes              |
-| Price                                     | `base_price` amount + currency                   | yes              |
-| Company                                   | `brand_image_url` (logo only)                    | no               |
-| Min. driver age                           | `min_drivers_age`                                | no               |
-| Doors, min. licence age, street, postcode | as sent                                          | no               |
+| Column                                    | API field                             | Shown by default |
+| ----------------------------------------- | ------------------------------------- | ---------------- |
+| From, To                                  | station `city` / `alternative_city`   | yes              |
+| From/To country                           | calculated from station coordinates   | yes              |
+| Vehicle                                   | `make` + `model`                      | yes              |
+| Category                                  | `vehicle_category_name`               | yes              |
+| Seats, Sleeps                             | `seats`, `sleeping`                   | yes              |
+| Earliest pick-up                          | `start_date`                          | yes              |
+| Latest pick-up                            | `valid_until` (to confirm, see below) | yes              |
+| Return by                                 | `end_date`                            | yes              |
+| Days included                             | `period` (hours)                      | yes              |
+| Max days                                  | `extra_period` (hours)                | yes              |
+| Free km                                   | `free_km`                             | yes              |
+| €/extra km                                | `cents_per_extra_km`                  | yes              |
+| Route km                                  | `distance` (metres)                   | yes              |
+| Price                                     | `base_price` amount + currency        | yes              |
+| Company                                   | `brand_image_url` (logo only)         | no               |
+| Min. driver age                           | `min_drivers_age`                     | no               |
+| Doors, min. licence age, street, postcode | as sent                               | no               |
 
 **Dropped:** fuel, gear, fuel policy and vehicle type. These only come as Movacar
 codes, and V04's labels for them turned out to be wrong (its "Car" was
@@ -72,10 +72,12 @@ The API has no country field, but From/To country are the most important columns
 
 ### Open question: which date is "latest pick-up"?
 
-The API has `valid_until` and `latest_pickup`, and they often differ by days. One
-idea is that `valid_until` is how long the offer stays bookable online. The real
-answer is whatever movacar.com shows for an offer. Until that's confirmed, both are
-kept.
+The API has `valid_until` and `latest_pickup`, and they often differ by days. For
+749 of 812 offers, `valid_until` is exactly the return deadline minus the included
+rental time: the last pick-up that still leaves all the included days. That may
+also be how long the offer can be booked online. `latest_pickup` is usually only
+hours before the return deadline. So the board uses `valid_until`, unless
+movacar.com shows otherwise. Both stay in the data; details in [api.md](api.md).
 
 ## Website
 
@@ -103,8 +105,9 @@ kept.
 
 0. ✅ **Skeleton:** project setup, checks on every pull request, publishing to
    GitHub Pages.
-1. **API notes + Refresh data:** notes on every field with real examples, the
-   refresh script and its checks, and tests built from saved real answers.
+1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
+   examples, the refresh script and its checks, and tests built from saved real
+   answers. The page shows the age of the data.
 2. **The table:** columns, sorting, show/hide, filters, shareable links, menu, data
    age and refresh status.
 3. **Phone polish.**

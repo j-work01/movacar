@@ -14,9 +14,14 @@ laptop and on a phone.
 The data is only refreshed when someone asks for it. There is no timer, so Movacar's
 API isn't called when nobody uses the board.
 
-_Coming in step 1:_ on GitHub, open **Actions → Refresh data → Run workflow**. This
-also works in a phone's browser. You need write access to this repository for this.
-After a few minutes the site shows the new data with its date and time.
+To refresh, open **[Actions → Refresh data](https://github.com/j-work01/movacar-board/actions/workflows/refresh.yml)**
+on GitHub and press **Run workflow**. This also works in a phone's browser. You need
+write access to this repository to do it. A refresh takes about 3–5 minutes; then the
+site shows the new data with its date and time.
+
+If a refresh fails (for example because Movacar changed its API), the previous data
+stays online, the site says what went wrong, and GitHub emails whoever started it.
+To refresh on your own computer, run `npm run refresh`, which writes to `public/data/`.
 
 ## How it works
 
