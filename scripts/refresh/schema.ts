@@ -69,7 +69,6 @@ const offerAttributes = z.object({
   seats: number,
   sleeping: number,
   start_date: text,
-  valid_until: text,
   /** Unix seconds, unlike the other dates. */
   latest_pickup: number,
   end_date: text,

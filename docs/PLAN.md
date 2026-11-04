@@ -30,29 +30,32 @@ calculated or guessed it. The one exception is country (see below).
 
 All columns come straight from the API, apart from the two country columns.
 
-| Column                                    | API field                             | Shown by default |
-| ----------------------------------------- | ------------------------------------- | ---------------- |
-| From, To                                  | station `city` / `alternative_city`   | yes              |
-| From/To country                           | calculated from station coordinates   | yes              |
-| Vehicle                                   | `make` + `model`                      | yes              |
-| Category                                  | `vehicle_category_name`               | yes              |
-| Seats, Sleeps                             | `seats`, `sleeping`                   | yes              |
-| Earliest pick-up                          | `start_date`                          | yes              |
-| Latest pick-up                            | `valid_until` (to confirm, see below) | yes              |
-| Return by                                 | `end_date`                            | yes              |
-| Days included                             | `period` (hours)                      | yes              |
-| Max days                                  | `extra_period` (hours)                | yes              |
-| Free km                                   | `free_km`                             | yes              |
-| €/extra km                                | `cents_per_extra_km`                  | yes              |
-| Route km                                  | `distance` (metres)                   | yes              |
-| Price                                     | `base_price` amount + currency        | yes              |
-| Company                                   | `brand_image_url` (logo only)         | no               |
-| Min. driver age                           | `min_drivers_age`                     | no               |
-| Doors, min. licence age, street, postcode | as sent                               | no               |
+| Column                        | API field                           | Shown by default |
+| ----------------------------- | ----------------------------------- | ---------------- |
+| From, To                      | station `city` / `alternative_city` | yes              |
+| From/To country               | calculated from station coordinates | yes              |
+| Vehicle                       | `make` + `model`                    | yes              |
+| Category                      | `vehicle_category_name`             | yes              |
+| Seats, Sleeps                 | `seats`, `sleeping`                 | yes              |
+| Earliest pick-up              | `start_date`                        | yes              |
+| Latest pick-up                | `latest_pickup`                     | yes              |
+| Return by                     | `end_date`                          | yes              |
+| Days incl.                    | `period` (hours)                    | yes              |
+| Extra days (that you can buy) | `extra_period` − `period`           | yes              |
+| Free km                       | `free_km`                           | yes              |
+| €/extra km                    | `cents_per_extra_km`                | yes              |
+| Route km                      | `distance` (metres)                 | yes              |
+| Price                         | `base_price` amount + currency      | yes              |
+| Company                       | `brand_image_url` (logo only)       | no               |
+| Min. driver age               | `min_drivers_age`                   | no               |
+| Min. licence (years)          | `min_licence_age` (months)          | no               |
+| Doors, street, postcode       | as sent                             | no               |
+| Link                          | the offer's own page on movacar.com | yes              |
 
 **Dropped:** fuel, gear, fuel policy and vehicle type. These only come as Movacar
 codes, and V04's labels for them turned out to be wrong (its "Car" was
-Transporters, its "Electric Car" a Mystery Van).
+Transporters, its "Electric Car" a Mystery Van). Also `valid_until`, which
+movacar.com doesn't show.
 
 ### Country
 
@@ -70,14 +73,11 @@ The API has no country field, but From/To country are the most important columns
 - Country names come from the browser's built-in `Intl.DisplayNames`, so there's no
   name table.
 
-### Open question: which date is "latest pick-up"?
+### Dates
 
-The API has `valid_until` and `latest_pickup`, and they often differ by days. For
-749 of 812 offers, `valid_until` is exactly the return deadline minus the included
-rental time: the last pick-up that still leaves all the included days. That may
-also be how long the offer can be booked online. `latest_pickup` is usually only
-hours before the return deadline. So the board uses `valid_until`, unless
-movacar.com shows otherwise. Both stay in the data; details in [api.md](api.md).
+Checked against movacar.com: "Earliest Pickup" is `start_date`, the pick-up
+calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details in
+[api.md](api.md#what-movacarcom-shows).
 
 ## Website
 
@@ -108,8 +108,13 @@ movacar.com shows otherwise. Both stay in the data; details in [api.md](api.md).
 1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
    examples, the refresh script and its checks, and tests built from saved real
    answers. The page shows the age of the data.
-2. **The table:** columns, sorting, show/hide, filters, shareable links, menu, data
-   age and refresh status.
+2. **The table**, in three parts:
+   - ✅ **2a:** the columns, sorting by one column, show/hide columns (remembered
+     per device), the ☰ menu and Export CSV. Each row links to the offer's own
+     page on movacar.com.
+   - **2b:** a filter on every column, the search box, and filters and sorting
+     kept in the web address.
+   - **2c:** "Refresh started … ago. Refreshing…" while a refresh runs.
 3. **Phone polish.**
 
 ## Not planned

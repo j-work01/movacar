@@ -15,6 +15,16 @@ export const cityPageUrl = (name: string, reference: string) =>
   `https://movacar.com/en-US/offers?origin=${encodeURIComponent(name)}` +
   `&oid=${encodeURIComponent(reference)}`
 
+/** One offer's page on movacar.com, where it can be booked ("Select offer"). */
+export const offerPageUrl = (
+  offerId: string,
+  originStationId: string,
+  destinationStationId: string,
+) =>
+  `https://movacar.com/en-US/checkout/${encodeURIComponent(offerId)}` +
+  `?origin=${encodeURIComponent(originStationId)}` +
+  `&destination=${encodeURIComponent(destinationStationId)}`
+
 export class HttpError extends Error {
   readonly status: number
   constructor(status: number, url: string) {

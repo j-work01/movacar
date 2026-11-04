@@ -3,7 +3,7 @@
 
 import type { Offer, Price, Station } from '../../src/data/types.ts'
 import { countryOf } from './country.ts'
-import { cityPageUrl } from './movacar-api.ts'
+import { cityPageUrl, offerPageUrl } from './movacar-api.ts'
 import {
   amountAttributes,
   parseOrThrow,
@@ -85,33 +85,41 @@ export function offersFromResponse(
     return { amountMinor: a.amount_minor_units, currency: a.currency }
   }
 
-  const url = cityPageUrl(origin.name, origin.reference)
+  // The offer's own page needs its number and both station ids; without
+  // them, fall back to the pick-up city's list of offers.
+  const url = (offerId: string | null, from: Station, to: Station) =>
+    offerId && from.id && to.id
+      ? offerPageUrl(offerId, from.id, to.id)
+      : cityPageUrl(origin.name, origin.reference)
 
-  return response.data.map(({ id, attributes: a, relationships: r }) => ({
-    id,
-    offerId: a.offer_id,
-    from: station(r.origin),
-    to: station(r.destination),
-    make: a.make,
-    model: a.model,
-    category: a.vehicle_category_name,
-    brandLogoUrl: a.brand_image_url ?? null,
-    vehicleImageUrl: a.vehicle_image_url ?? null,
-    seats: a.seats,
-    sleeps: a.sleeping,
-    doors: a.doors ?? null,
-    minDriverAge: a.min_drivers_age ?? null,
-    minLicenceAge: a.min_licence_age ?? null,
-    startDate: a.start_date,
-    validUntil: a.valid_until,
-    latestPickup: unixToIso(a.latest_pickup),
-    endDate: a.end_date,
-    periodHours: a.period,
-    extraPeriodHours: a.extra_period,
-    freeKm: a.free_km,
-    centsPerExtraKm: a.cents_per_extra_km,
-    distanceMeters: a.distance,
-    price: price(r.base_price),
-    url,
-  }))
+  return response.data.map(({ id, attributes: a, relationships: r }) => {
+    const from = station(r.origin)
+    const to = station(r.destination)
+    return {
+      id,
+      offerId: a.offer_id,
+      from,
+      to,
+      make: a.make,
+      model: a.model,
+      category: a.vehicle_category_name,
+      brandLogoUrl: a.brand_image_url ?? null,
+      vehicleImageUrl: a.vehicle_image_url ?? null,
+      seats: a.seats,
+      sleeps: a.sleeping,
+      doors: a.doors ?? null,
+      minDriverAge: a.min_drivers_age ?? null,
+      minLicenceMonths: a.min_licence_age ?? null,
+      startDate: a.start_date,
+      latestPickup: unixToIso(a.latest_pickup),
+      endDate: a.end_date,
+      periodHours: a.period,
+      extraPeriodHours: a.extra_period,
+      freeKm: a.free_km,
+      centsPerExtraKm: a.cents_per_extra_km,
+      distanceMeters: a.distance,
+      price: price(r.base_price),
+      url: url(a.offer_id, from, to),
+    }
+  })
 }

@@ -46,23 +46,23 @@ export interface Offer {
   sleeps: number | null
   doors: number | null
   minDriverAge: number | null
-  minLicenceAge: number | null
+  /** `min_licence_age`: how long you must have had a licence, in months. */
+  minLicenceMonths: number | null
   /** Timestamps in UTC (ISO 8601), exactly as the API sends them. */
   startDate: string | null
-  validUntil: string | null
   /** The API sends this one as Unix seconds; stored as ISO 8601 like the others. */
   latestPickup: string | null
   endDate: string | null
   /** `period`: included rental time, in hours. */
   periodHours: number | null
-  /** `extra_period`, in hours. */
+  /** `extra_period`: included plus extra time you can buy, in hours. */
   extraPeriodHours: number | null
   freeKm: number | null
   centsPerExtraKm: number | null
   /** `distance`: route length in metres. */
   distanceMeters: number | null
   price: Price | null
-  /** The pick-up city's offer page on movacar.com. */
+  /** The offer's own page on movacar.com, where it can be booked. */
   url: string
 }
 
