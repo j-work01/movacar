@@ -1,0 +1,81 @@
+{
+  "data": {
+    "type": "",
+    "relationships": {
+      "destinations": {
+        "data": [
+          {
+            "type": "locationsummary",
+            "id": "3695_destination"
+          },
+          {
+            "type": "locationsummary",
+            "id": "7256_destination"
+          }
+        ]
+      },
+      "origins": {
+        "data": [
+          {
+            "type": "locationsummary",
+            "id": "3699_origin"
+          },
+          {
+            "type": "locationsummary",
+            "id": "4003_origin"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "locationsummary",
+      "id": "4003_origin",
+      "attributes": {
+        "latitude": 48.1371078999048,
+        "location_type": "origin",
+        "longitude": 11.5753822,
+        "name": "München",
+        "offer_count": 45,
+        "reference": "01JCR8QJ9K2K68BYKVSC0EE42Q"
+      }
+    },
+    {
+      "type": "locationsummary",
+      "id": "3699_origin",
+      "attributes": {
+        "latitude": 50.809010599283745,
+        "location_type": "origin",
+        "longitude": 8.7704695,
+        "name": "Marburg",
+        "offer_count": 43,
+        "reference": "01JCREA8S3YSVJ9A69X9XJDVR4"
+      }
+    },
+    {
+      "type": "locationsummary",
+      "id": "3695_destination",
+      "attributes": {
+        "latitude": 49.48929129957233,
+        "location_type": "destination",
+        "longitude": 8.4673098,
+        "name": "Mannheim",
+        "offer_count": 2,
+        "reference": "01JCRF6WXP1KQETKEN9FTXM5FP"
+      }
+    },
+    {
+      "type": "locationsummary",
+      "id": "7256_destination",
+      "attributes": {
+        "latitude": 36.72130279981439,
+        "location_type": "destination",
+        "longitude": -4.4216366,
+        "name": "Málaga",
+        "offer_count": 4,
+        "reference": "01JCRNKBZBYCV24BQA6Z7F09Y3"
+      }
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+name: Refresh data
+
+# Fetches fresh offers from Movacar and republishes the site. It only runs
+# when started by hand: Actions → Refresh data → Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # to save the data on the `data` branch
+  pages: write # to republish the site
+  id-token: write
+
+# Never two refreshes at the same time; a second one waits for the first.
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Fetch offers from Movacar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Get the current data
+        run: |
+          if git ls-remote --exit-code --heads origin data > /dev/null; then
+            git fetch --depth=1 origin data
+            git worktree add --detach data-branch FETCH_HEAD
+          else
+            git worktree add --orphan -b data data-branch
+          fi
+
+      # If this fails, the previous offers.json stays and status.json says why.
+      - name: Fetch offers
+        id: fetch
+        continue-on-error: true
+        run: npm run refresh -- --out data-branch
+
+      - name: Save to the data branch
+        working-directory: data-branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit --quiet --message "Data refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push origin HEAD:refs/heads/data
+          fi
+
+      - name: Report a failed refresh
+        if: steps.fetch.outcome == 'failure'
+        run: |
+          echo "::error::The refresh failed, so the previous data stays online. status.json on the data branch says why."
+          exit 1
+
+  publish:
+    name: Republish the site
+    needs: refresh
+    # Also after a failed refresh, so the site can show what went wrong.
+    if: always()
+    uses: ./.github/workflows/deploy.yml
