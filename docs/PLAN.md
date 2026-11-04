@@ -108,8 +108,13 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
    examples, the refresh script and its checks, and tests built from saved real
    answers. The page shows the age of the data.
-2. **The table:** columns, sorting, show/hide, filters, shareable links, menu, data
-   age and refresh status.
+2. **The table**, in three parts:
+   - ✅ **2a:** the columns, sorting by one column, show/hide columns (remembered
+     per device), the ☰ menu and Export CSV. Each row links to the offer's own
+     page on movacar.com.
+   - **2b:** a filter on every column, the search box, and filters and sorting
+     kept in the web address.
+   - **2c:** "Refresh started … ago. Refreshing…" while a refresh runs.
 3. **Phone polish.**
 
 ## Not planned
