@@ -58,14 +58,22 @@ export interface ColumnConfig {
 const blank = <T,>(value: T | null | undefined): T | undefined =>
   value ?? undefined
 
-const hoursToDays = (hours: number | null) =>
-  hours === null ? undefined : hours / 24
+/**
+ * `value / by`, or a blank when the value is missing. `typeof` rather than a
+ * null check, so a field that an older data file doesn't have yet is a blank
+ * too, not NaN.
+ */
+const per = (value: number | null | undefined, by: number) =>
+  typeof value === 'number' ? value / by : undefined
 
 /** Days you can buy on top of the included ones ("+ 1 day extra"). */
-export const extraDays = (offer: Offer) =>
-  offer.periodHours === null || offer.extraPeriodHours === null
+export const extraDays = (offer: Offer) => {
+  const included = per(offer.periodHours, 24)
+  const withExtra = per(offer.extraPeriodHours, 24)
+  return included === undefined || withExtra === undefined
     ? undefined
-    : Math.max(0, (offer.extraPeriodHours - offer.periodHours) / 24)
+    : Math.max(0, withExtra - included)
+}
 
 const currencyOf = (offer: Offer) => offer.price?.currency ?? 'EUR'
 
@@ -163,8 +171,7 @@ export const COLUMNS: ColumnConfig[] = [
     header: 'Licence (yrs)',
     kind: 'number',
     shownByDefault: false,
-    value: (o) =>
-      o.minLicenceMonths === null ? undefined : o.minLicenceMonths / 12,
+    value: (o) => per(o.minLicenceMonths, 12),
   },
   {
     id: 'startDate',
@@ -192,7 +199,7 @@ export const COLUMNS: ColumnConfig[] = [
     label: 'Days incl.',
     kind: 'number',
     shownByDefault: true,
-    value: (o) => hoursToDays(o.periodHours),
+    value: (o) => per(o.periodHours, 24),
   },
   {
     id: 'extraDays',
@@ -213,22 +220,23 @@ export const COLUMNS: ColumnConfig[] = [
     label: '€/extra km',
     kind: 'number',
     shownByDefault: true,
-    value: (o) =>
-      o.centsPerExtraKm === null ? undefined : o.centsPerExtraKm / 100,
-    render: (o) =>
-      o.centsPerExtraKm === null
+    value: (o) => per(o.centsPerExtraKm, 100),
+    render: (o) => {
+      const euros = per(o.centsPerExtraKm, 100)
+      return euros === undefined
         ? '—'
-        : formatMoney(o.centsPerExtraKm / 100, currencyOf(o), 'cents'),
+        : formatMoney(euros, currencyOf(o), 'cents')
+    },
   },
   {
     id: 'routeKm',
     label: 'Route km',
     kind: 'number',
     shownByDefault: true,
-    value: (o) =>
-      o.distanceMeters === null
-        ? undefined
-        : Math.round(o.distanceMeters / 1000),
+    value: (o) => {
+      const km = per(o.distanceMeters, 1000)
+      return km === undefined ? undefined : Math.round(km)
+    },
   },
   {
     id: 'price',

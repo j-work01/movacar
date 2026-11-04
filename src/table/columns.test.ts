@@ -67,3 +67,14 @@ describe('columns', () => {
     expect(csvValue(column('price'), offer)).toBe(129)
   })
 })
+
+describe('older data files', () => {
+  it('show a field they do not have yet as a blank, not NaN', () => {
+    const old = makeOffer('1') as unknown as Record<string, unknown>
+    delete old.minLicenceMonths
+    delete old.centsPerExtraKm
+    const offer = old as unknown as ReturnType<typeof makeOffer>
+    expect(valueOf('minLicence', offer)).toBeUndefined()
+    expect(valueOf('extraKm', offer)).toBeUndefined()
+  })
+})
