@@ -1,11 +1,11 @@
 {
-  "startedAt": "2026-11-04T22:43:13.543Z",
-  "finishedAt": "2026-11-04T22:45:31.419Z",
+  "startedAt": "2026-11-04T23:33:02.183Z",
+  "finishedAt": "2026-11-04T23:35:51.601Z",
   "ok": true,
   "error": null,
   "warnings": [],
-  "cities": 110,
+  "cities": 111,
   "failedCities": [],
-  "offers": 812,
-  "dataFetchedAt": "2026-11-04T22:45:31.419Z"
+  "offers": 813,
+  "dataFetchedAt": "2026-11-04T23:35:51.601Z"
 }
