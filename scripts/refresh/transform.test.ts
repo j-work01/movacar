@@ -53,9 +53,8 @@ describe('offersFromResponse', () => {
       sleeps: 4,
       doors: 5,
       minDriverAge: 18,
-      minLicenceAge: 12,
+      minLicenceMonths: 12,
       startDate: '2026-11-20T23:00:00Z',
-      validUntil: '2026-11-21T22:59:59Z',
       latestPickup: '2026-11-27T22:59:59Z',
       endDate: '2026-11-28T22:59:59Z',
       periodHours: 168,
@@ -64,7 +63,8 @@ describe('offersFromResponse', () => {
       centsPerExtraKm: 50,
       distanceMeters: 2331671,
       price: { amountMinor: 12900, currency: 'EUR' },
-      url: 'https://movacar.com/en-US/offers?origin=M%C3%BCnchen&oid=01JCR8QJ9K2K68BYKVSC0EE42Q',
+      // The same link as "Select offer" on movacar.com.
+      url: 'https://movacar.com/en-US/checkout/261802?origin=2308&destination=3003',
     })
   })
 
@@ -82,6 +82,10 @@ describe('offersFromResponse', () => {
     )
     expect(camper.to.name).toBe('')
     expect(camper.to.country).toBeNull()
+    // Without the station's id there's no offer page, so link to the city's list.
+    expect(camper.url).toBe(
+      'https://movacar.com/en-US/offers?origin=M%C3%BCnchen&oid=01JCR8QJ9K2K68BYKVSC0EE42Q',
+    )
   })
 })
 

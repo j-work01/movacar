@@ -37,7 +37,7 @@ of type `locationsummary`:
 
 - On 4 Nov 2026 there were 110 pick-up and 151 drop-off locations, with 813 offers.
 - `offer_count` doesn't always match what the offers endpoint returns: München
-  counted 45, and 53 came back.
+  counted 45, while 53 came back (and movacar.com also said "53 offers available").
 - Some names are German: "Zamudio (bei Bilbao)".
 
 ### `GET /offers?locale=en&origin=<reference>`
@@ -67,20 +67,20 @@ limit. A full refresh is therefore 1 + 110 requests.
 | `seats`                 | `seats`            | `2`                                        |                                                         |
 | `sleeping`              | `sleeps`           | `0`                                        | 0 for vans                                              |
 | `doors`                 | `doors`            | `5`                                        |                                                         |
-| `min_drivers_age`       | `minDriverAge`     | `25`                                       | 18, 19 and 25 seen                                      |
-| `min_licence_age`       | `minLicenceAge`    | `24`                                       | years                                                   |
-| `start_date`            | `startDate`        | `2026-11-20T23:00:00Z`                     | earliest pick-up                                        |
-| `valid_until`           | `validUntil`       | `2026-11-21T22:59:59Z`                     | meaning unclear, see below                              |
-| `latest_pickup`         | `latestPickup`     | `1795820399`                               | **Unix seconds**, unlike the other dates; stored as ISO |
-| `end_date`              | `endDate`          | `2026-11-28T22:59:59Z`                     | return by                                               |
-| `period`                | `periodHours`      | `168`                                      | hours                                                   |
-| `extra_period`          | `extraPeriodHours` | `168`                                      | hours; V04 read it as the maximum with extra days       |
+| `min_drivers_age`       | `minDriverAge`     | `18`                                       | "Age 18+"; 18, 19 and 25 seen                           |
+| `min_licence_age`       | `minLicenceMonths` | `12`                                       | **months**: "Driving licence min. 1 year"               |
+| `start_date`            | `startDate`        | `2026-11-20T23:00:00Z`                     | "Earliest Pickup"                                       |
+| `latest_pickup`         | `latestPickup`     | `1795820399`                               | last day of the pick-up calendar; **Unix seconds**      |
+| `end_date`              | `endDate`          | `2026-11-28T22:59:59Z`                     | "Latest Delivery": return by                            |
+| `period`                | `periodHours`      | `168`                                      | hours: "7 days incl."                                   |
+| `extra_period`          | `extraPeriodHours` | `144`                                      | hours, included plus extra days you can buy (see below) |
 | `free_km`               | `freeKm`           | `2600`                                     |                                                         |
 | `cents_per_extra_km`    | `centsPerExtraKm`  | `50`                                       |                                                         |
 | `distance`              | `distanceMeters`   | `2331671`                                  | metres                                                  |
 
-**Not used:** `vehicle_type`, `fuel_type`, `gear_type`, `refuel` and `additional_info`
-only come as Movacar codes such as `crowd_vehicle_type_5`. V04 translated them with
+**Not used:** `valid_until` (see [Dates](#dates)). `vehicle_type`, `fuel_type`,
+`gear_type`, `refuel` and `additional_info` only come as Movacar codes such as
+`crowd_vehicle_type_5`. V04 translated them with
 its own table, which turned out to be wrong: `crowd_vehicle_type_0` (its "Car") is
 Transporters, `crowd_vehicle_type_1` (its "Electric Car") is a Mystery Van.
 Camper fields like `kitchen`, `shower` and `wc` were always empty.
@@ -89,7 +89,7 @@ Camper fields like `kitchen`, `shower` and `wc` were always empty.
 
 | API field               | In `offers.json`        | Notes                                                                                           |
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
-| `id` (of the station)   | `id`                    | unique per station, e.g. `2487`; country overrides use this                                     |
+| `id` (of the station)   | `id`                    | unique per station, e.g. `2308`; used in the offer's link and by the country overrides          |
 | `reference`             | `reference`             | **shared by all stations of a location**: München's airport and city stations have the same one |
 | `city`                  | `city`                  | `München Flughafen`                                                                             |
 | `alternative_city`      | `name`                  | `Viladecans (near Barcelona)`; falls back to `city`                                             |
@@ -103,7 +103,19 @@ always empty.
 ## Price
 
 A `monetary_amount` with an id like `12900-EUR`: `amount_minor_units` (12900 means
-129.00) and `currency`.
+129.00) and `currency`. On 4 Nov 2026 every offer cost €1, €99 or €129.
+
+## Links to movacar.com
+
+An offer's own page (where "Select offer" leads, with the pick-up calendar) is
+
+```
+https://movacar.com/en-US/checkout/<offer_id>?origin=<origin station id>&destination=<destination station id>
+```
+
+for example `https://movacar.com/en-US/checkout/261802?origin=2308&destination=3003`.
+A pick-up city's list of offers is
+`https://movacar.com/en-US/offers?origin=<name>&oid=<reference>`.
 
 ## Dates
 
@@ -114,31 +126,30 @@ A `monetary_amount` with an id like `12900-EUR`: `amount_minor_units` (12900 mea
   the same `22:59:59Z` in summer, which is then 00:59:59 the _next_ day. Summer dates
   may therefore look a day late. To check next summer.
 
-### Open question: `valid_until` or `latest_pickup`?
+### What movacar.com shows
 
-Both look like a "last pick-up" date, and they often differ by days. Across all 812
-offers of 4 Nov 2026:
+Checked on 4 Nov 2026 with München → Málaga, ROAD HOUSE camper, offer 261802
+(Dutch time):
 
-- `valid_until` is exactly `end_date` minus `period` for 749 offers: every Carl & Carla
-  offer and all but one roadsurfer offer. It's the last pick-up that still leaves all
-  the included rental time.
-- `latest_pickup` is usually only hours before `end_date`: 5–11 hours for most
-  roadsurfer offers, about a day for Carl & Carla. That's too late to drive a
-  relocation route, so it looks like a hard limit.
-- Indie Campers and Sixt are mixed: their `valid_until` sometimes equals `end_date`.
+| API field       | value             | on movacar.com                                   |
+| --------------- | ----------------- | ------------------------------------------------ |
+| `start_date`    | Sat 21 Nov, 00:00 | "21/11/26 Earliest Pickup"                       |
+| `latest_pickup` | Fri 27 Nov, 23:59 | the pick-up calendar runs from 21 to 27 November |
+| `end_date`      | Sat 28 Nov, 23:59 | "28/11/26 Latest Delivery"                       |
+| `period`        | 168 hours         | "7 days incl."                                   |
+| `valid_until`   | Sat 21 Nov, 23:59 | not shown                                        |
 
-So `valid_until` is the useful "latest pick-up" (V04 used it that way too).
-Another reading is that it's how long the offer can be booked online. In practice
-both mean the same thing. To confirm, compare with what movacar.com shows.
+So `latest_pickup` is the latest pick-up. The calendar also leaves out days when
+the station is closed (Sunday 22 Nov was "Regularly closed"), and the API doesn't
+include those.
 
-Example, München → Málaga (ROAD HOUSE camper, offer 261802), Dutch time:
+`valid_until` isn't used. For 749 of the 812 offers it's exactly `end_date` minus
+`period`: the last pick-up that still leaves all the included days. It may be how
+long Movacar lists the offer, but the site's calendar goes past it.
 
-| field           | value             |
-| --------------- | ----------------- |
-| `start_date`    | Sat 21 Nov, 00:00 |
-| `valid_until`   | Sat 21 Nov, 23:59 |
-| `latest_pickup` | Fri 27 Nov, 23:59 |
-| `end_date`      | Sat 28 Nov, 23:59 |
+**Extra days:** a SURFER SUITE on the same route had `period` 120 and
+`extra_period` 144, shown as "5 days incl. + 1 day extra". So the extra days you can
+buy are `(extra_period − period) / 24`.
 
-`period` isn't always the rental length either: an Indie Campers offer had
-`period` 384 (16 days) with only about 9 days between pick-up and return.
+`period` can also be longer than the time between pick-up and return: an Indie
+Campers offer had `period` 384 (16 days) with only about 9 days in between.
