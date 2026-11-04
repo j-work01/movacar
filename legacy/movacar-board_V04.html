@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movacar transfer board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#33363C;
+    --plate:#F4F4F1;
+    --ink:#15171B;
+    --eu-blue:#003399;
+    --eu-yellow:#FFCC00;
+    --stamp:#C8102E;
+    --rule:#C6C8C2;
+    --muted:#6B6F76;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --heavy:'Archivo Black','Archivo', ui-sans-serif, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--asphalt);
+    background-image:radial-gradient(circle at 18% 10%,#3C4047 0%,transparent 55%),
+                     radial-gradient(circle at 84% 90%,#3A3D44 0%,transparent 50%);
+    color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;
+    padding:26px 18px 60px;
+  }
+  .wrap{max-width:1240px;margin:0 auto}
+
+  /* signature: the header is a European number plate */
+  .plate{display:flex;background:var(--plate);border:3px solid var(--ink);
+    border-radius:9px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.42)}
+  .band{background:var(--eu-blue);width:54px;flex:0 0 54px;display:flex;
+    flex-direction:column;align-items:center;justify-content:space-between;padding:11px 0 9px}
+  .band-code{font-family:var(--heavy);font-size:15px;color:#fff}
+  .plate-body{flex:1;display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:13px 18px;flex-wrap:wrap}
+  .plate-title{font-family:var(--heavy);font-size:clamp(20px,3.2vw,31px);letter-spacing:.055em;
+    text-transform:uppercase;line-height:1;margin:0}
+  .plate-sub{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin-top:7px}
+
+  button{font-family:var(--sans);font-weight:600;font-size:13.5px;letter-spacing:.03em;
+    padding:9px 16px;border-radius:5px;cursor:pointer;border:2px solid var(--ink);
+    background:var(--eu-yellow);color:var(--ink);transition:transform .1s,box-shadow .1s}
+  button:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--ink)}
+  button:active{transform:translateY(1px);box-shadow:none}
+  button:focus-visible{outline:3px solid var(--eu-blue);outline-offset:2px}
+  button[disabled]{opacity:.5;cursor:wait;transform:none;box-shadow:none}
+  button.ghost{background:transparent;border-color:var(--rule);font-size:12.5px;padding:8px 13px}
+  button.ghost:hover{border-color:var(--ink)}
+  button.ghost[aria-expanded=true]{border-color:var(--ink);background:#DEDEDA}
+
+  .card{background:var(--plate);border:2px solid var(--ink);border-radius:7px;
+    margin-top:18px;box-shadow:0 10px 26px rgba(0,0,0,.3);overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:11px 14px;border-bottom:2px solid var(--ink);background:#EAEAE6}
+  .bar h2{font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;margin:0}
+  .filters{border-bottom:2px solid var(--ink)}
+  .filters .bar{border-bottom:0}
+  .filters .bar + .bar{border-top:1px solid var(--rule)}
+  .grow{flex:1}
+  .grp{display:inline-flex;align-items:center;gap:8px;margin-right:8px}
+  .lbl{font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .dash{color:var(--muted)}
+  .count{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+  .seg{display:inline-flex;border:2px solid var(--ink);border-radius:5px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:transparent;padding:6px 11px;
+    font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  .seg button:hover{transform:none;box-shadow:none;background:#DEDEDA}
+  .seg button[aria-pressed=true]{background:var(--eu-blue);color:#fff}
+  .seg button + button{border-left:2px solid var(--ink)}
+  #euro[aria-pressed=true]{background:var(--stamp);color:#fff;border-color:var(--stamp)}
+
+  input[type=text],input[type=date],select{font-family:var(--mono);font-size:13px;padding:8px 11px;
+    border:2px solid var(--rule);border-radius:5px;background:#fff;color:var(--ink)}
+  input[type=text]{min-width:210px}
+  input[type=date]{padding:6px 8px}
+  select{padding:7px 8px;cursor:pointer;max-width:200px}
+  input:focus,select:focus{outline:none;border-color:var(--eu-blue)}
+  .set{border-color:var(--eu-blue);background:#EEF2FB}
+
+  .chips{flex:1 1 300px;display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px;
+    padding:4px 9px 4px 7px;border:1.5px solid var(--ink);border-radius:4px;background:var(--plate);
+    cursor:pointer;user-select:none}
+  .chip input{margin:0;accent-color:var(--eu-blue);cursor:pointer}
+  .chip.off{border-color:var(--rule);color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+  thead th{position:sticky;top:0;z-index:1;background:#EAEAE6;text-align:left;
+    padding:8px 10px;font-family:var(--sans);font-weight:700;font-size:10px;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    border-bottom:2px solid var(--ink);cursor:pointer;white-space:nowrap;user-select:none}
+  thead th:hover{color:var(--ink)}
+  thead th .arw{opacity:.3;margin-left:3px}
+  thead th[data-on="1"]{color:var(--ink)}
+  thead th[data-on="1"] .arw{opacity:1;color:var(--eu-blue)}
+  tbody td{padding:7px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+  tbody tr:hover{background:#EDEDE9}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  td.city{font-weight:600;white-space:normal;min-width:96px}
+  td.veh{white-space:normal;min-width:150px;max-width:230px}
+  .scroll{max-height:70vh;overflow:auto}
+
+  .price{display:inline-block;font-family:var(--heavy);font-size:11.5px;
+    padding:2px 7px;border:1.5px solid var(--ink);border-radius:3px;background:var(--plate)}
+  .price.one{background:var(--stamp);color:#fff;border-color:var(--stamp)}
+  .price.low{background:var(--eu-yellow)}
+  .xd{color:var(--eu-blue);font-size:11px;margin-left:1px}
+  .tag{font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;padding:2px 6px;border-radius:3px;background:#DEDEDA;color:var(--ink)}
+  .tag.camper{background:var(--eu-blue);color:#fff}
+  .tag.electric{background:#0B7A4B;color:#fff}
+  /* country codes echo the plate's blue band */
+  .cc{display:inline-block;min-width:26px;text-align:center;font-family:var(--heavy);font-size:10.5px;
+    letter-spacing:.05em;padding:2px 5px;border-radius:3px;background:var(--eu-blue);color:#fff;cursor:help}
+  a{color:var(--eu-blue);text-decoration:none;border-bottom:1px solid rgba(0,51,153,.3)}
+  a:hover{border-bottom-color:var(--eu-blue)}
+
+  .status{font-family:var(--mono);font-size:12.5px;padding:13px 14px;color:var(--muted)}
+  .status.err{color:var(--stamp);background:#FBEAEC;border-top:1px solid var(--rule)}
+  .status.err b{display:block;font-family:var(--sans);margin-bottom:4px}
+  .empty{padding:32px 14px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px}
+  code{font-family:var(--mono);font-size:12px;background:#E4E4E0;padding:1px 5px;border-radius:3px}
+  .foot{color:#9AA0A8;font-family:var(--mono);font-size:11.5px;text-align:center;
+    margin-top:24px;letter-spacing:.04em}
+  .foot code{background:rgba(255,255,255,.1);color:#C3C8D0}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (max-width:620px){.band{width:40px;flex:0 0 40px}tbody td,thead th{padding:6px 7px}
+    body{padding:18px 16px 48px}input[type=text]{min-width:0;flex:1}
+    .grp{flex-wrap:wrap}.route{flex:1 1 100%}.route select{flex:1;min-width:0;max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="plate">
+    <div class="band">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><g fill="#FFCC00">
+        <circle cx="12" cy="4" r="1.15"/><circle cx="16" cy="5.07" r="1.15"/>
+        <circle cx="18.93" cy="8" r="1.15"/><circle cx="20" cy="12" r="1.15"/>
+        <circle cx="18.93" cy="16" r="1.15"/><circle cx="16" cy="18.93" r="1.15"/>
+        <circle cx="12" cy="20" r="1.15"/><circle cx="8" cy="18.93" r="1.15"/>
+        <circle cx="5.07" cy="16" r="1.15"/><circle cx="4" cy="12" r="1.15"/>
+        <circle cx="5.07" cy="8" r="1.15"/><circle cx="8" cy="5.07" r="1.15"/>
+      </g></svg>
+      <span class="band-code">MC</span>
+    </div>
+    <div class="plate-body">
+      <div>
+        <h1 class="plate-title">Transfer board</h1>
+        <div class="plate-sub" id="stamp">starting…</div>
+      </div>
+      <button id="reload">Reload</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="filters">
+      <div class="bar">
+        <h2>Offers</h2>
+        <input type="text" id="q" placeholder="city, country or vehicle…" autocomplete="off">
+        <div class="seg" role="group" aria-label="Vehicle type">
+          <button data-kind="all" aria-pressed="true">All</button>
+          <button data-kind="Car" aria-pressed="false">Car</button>
+          <button data-kind="Camper" aria-pressed="false">Camper</button>
+          <button data-kind="Transporter / 9-Seater" aria-pressed="false">Van</button>
+        </div>
+        <button class="ghost" id="euro" aria-pressed="false">1 € only</button>
+        <span class="grow"></span>
+        <span class="count" id="count"></span>
+        <button class="ghost" id="csv">CSV</button>
+      </div>
+      <div class="bar">
+        <span class="grp">
+          <span class="lbl">Date</span>
+          <span class="seg" role="group" aria-label="Filter dates by">
+            <button data-dmode="pickup" aria-pressed="true">Pick-up</button>
+            <button data-dmode="return_by" aria-pressed="false">Return by</button>
+          </span>
+        </span>
+        <span class="grp">
+          <input type="date" id="d1" aria-label="Earliest date">
+          <span class="dash">–</span>
+          <input type="date" id="d2" aria-label="Latest date">
+          <button class="ghost" id="dclear" hidden>Clear</button>
+        </span>
+        <span class="grp route">
+          <span class="lbl">Route</span>
+          <select id="cfrom" aria-label="From country"><option value="">any</option></select>
+          <span class="dash">→</span>
+          <select id="cto" aria-label="To country"><option value="">any</option></select>
+        </span>
+        <span class="grow"></span>
+        <button class="ghost" id="colbtn" aria-expanded="false" aria-controls="colbar">Columns</button>
+      </div>
+      <div class="bar" id="colbar" hidden>
+        <span class="lbl">Show</span>
+        <div class="chips" id="chips"></div>
+        <button class="ghost" id="colall">Show all</button>
+      </div>
+    </div>
+    <div class="scroll"><div id="tbl"><div class="empty">Loading…</div></div></div>
+    <div id="status"></div>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <h2>Pick-up locations</h2>
+      <span class="grow"></span>
+      <button class="ghost" id="csvloc">CSV</button>
+    </div>
+    <div class="scroll" style="max-height:40vh"><div id="loctbl"><div class="empty">Loading…</div></div></div>
+  </section>
+
+  <p class="foot">
+    Reads <code>/v1/locations/offers</code> then <code>/v1/offers?origin=…</code> ·
+    no login · one request per pick-up city, paced 300&nbsp;ms apart<br>
+    countries are worked out from station coordinates (Natural Earth borders) and postcodes
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var BASE = 'https://crowd-api-production-615013621295.europe-west1.run.app/v1';
+  var SITE = 'https://movacar.com';
+  var LOCALE = 'en';
+
+  // The API returns i18n keys for these fields; the site resolves them from a
+  // translation bundle that has no CORS headers, so the labels live here instead.
+  var LABEL = {
+    crowd_vehicle_type_0:'Car', crowd_vehicle_type_1:'Electric Car',
+    crowd_vehicle_type_2:'Transporter / 9-Seater', crowd_vehicle_type_5:'Camper',
+    crowd_vehicle_fuel_type_0:'Petrol', crowd_vehicle_fuel_type_1:'Diesel',
+    crowd_vehicle_fuel_type_2:'Hybrid', crowd_vehicle_fuel_type_3:'Electric',
+    crowd_vehicle_fuel_type_4:'Hydrogen', crowd_vehicle_fuel_type_5:'Autogas (LPG)',
+    crowd_vehicle_fuel_type_6:'MultiFuel', crowd_vehicle_fuel_type_7:'Ethanol',
+    crowd_vehicle_fuel_type_10:'Unspecified',
+    crowd_vehicle_gear_type_0:'Manual', crowd_vehicle_gear_type_1:'Automatic',
+    crowd_vehicle_gear_type_2:'Manual/Auto',
+    crowd_refuel_policy_0:'Fuel not included', crowd_refuel_policy_1:'1st tank incl.',
+    crowd_refuel_policy_2:'Fuel included', crowd_refuel_policy_3:'Full-Full, reimbursed',
+    crowd_refuel_policy_4:'Refuel to level at pick-up', crowd_refuel_policy_5:'1st tank incl.',
+    crowd_refuel_policy_6:'Full-Full, up to 50 €', crowd_refuel_policy_9:'Route fuel incl.',
+    crowd_refuel_policy_full:'Full-Full'
+  };
+  var lab = function (k) { return LABEL[k] || (k == null ? '' : String(k)); };
+
+  var COUNTRY = {
+    AD:'Andorra', AL:'Albania', AT:'Austria', BA:'Bosnia and Herzegovina', BE:'Belgium',
+    BG:'Bulgaria', CH:'Switzerland', CZ:'Czechia', DE:'Germany', DK:'Denmark', EE:'Estonia',
+    ES:'Spain', FI:'Finland', FR:'France', GB:'United Kingdom', GR:'Greece', HR:'Croatia',
+    HU:'Hungary', IE:'Ireland', IS:'Iceland', IT:'Italy', LI:'Liechtenstein', LT:'Lithuania',
+    LU:'Luxembourg', LV:'Latvia', MC:'Monaco', ME:'Montenegro', MK:'North Macedonia', MT:'Malta',
+    NL:'Netherlands', NO:'Norway', PL:'Poland', PT:'Portugal', RO:'Romania', RS:'Serbia',
+    SE:'Sweden', SI:'Slovenia', SK:'Slovakia', SM:'San Marino', VA:'Vatican City', XK:'Kosovo'
+  };
+
+  var offers = [], locs = [];
+  var sort = { key: 'pickup', dir: 1 };
+  var kind = 'all', euroOnly = false, dmode = 'pickup', hidden;
+  var $ = function (i) { return document.getElementById(i); };
+
+  // ------------------------------------------------------------------ network
+
+  function getJSON(url) {
+    return fetch(url, {
+      // Accept is CORS-safelisted, so no preflight is triggered.
+      headers: { 'Accept': 'application/vnd.api+json' },
+      credentials: 'omit'
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+      return r.json();
+    });
+  }
+
+  function loadAll() {
+    var btn = $('reload');
+    btn.disabled = true;
+    offers = []; locs = [];
+    $('status').innerHTML = '';
+    $('stamp').textContent = 'fetching locations…';
+
+    getJSON(BASE + '/locations/offers?locale=' + LOCALE).then(function (p) {
+      locs = (p.included || []).map(function (i) { return i.attributes; })
+        .filter(function (a) { return a && typeof a.latitude === 'number'; });
+      renderLocs();
+
+      var origins = locs.filter(function (l) {
+        return l.location_type === 'origin' && l.offer_count > 0;
+      });
+      if (!origins.length) throw new Error('no pick-up locations with offers');
+
+      var i = 0, failed = 0;
+      return (function step() {
+        if (i >= origins.length) {
+          if (failed) $('status').innerHTML =
+            '<div class="status">' + failed + ' of ' + origins.length + ' cities failed to load.</div>';
+          return;
+        }
+        var o = origins[i++];
+        $('stamp').textContent = 'loading offers ' + i + '/' + origins.length + ' · ' + o.name;
+        return getJSON(BASE + '/offers?locale=' + LOCALE + '&origin=' + encodeURIComponent(o.reference))
+          .then(function (payload) {
+            offers = offers.concat(parse(payload, o));
+            syncCountries();
+            render();
+          })
+          .catch(function () { failed++; })
+          .then(function () {
+            return new Promise(function (r) { setTimeout(r, 300); }).then(step);  // stay polite
+          });
+      })();
+    }).then(function () {
+      stamp();
+    }).catch(function (e) {
+      var msg = String(e && e.message || e);
+      $('status').innerHTML = '<div class="status err"><b>Request failed — ' + esc(msg) + '</b>' +
+        (/Failed to fetch|NetworkError|Load failed/i.test(msg)
+          ? 'The browser blocked the request or the network is down. If this file is on your desktop, ' +
+            'serve it instead: run <code>python3 -m http.server 8000</code> in that folder and open ' +
+            '<code>http://localhost:8000/movacar-board.html</code>.'
+          : 'The endpoint answered in an unexpected shape — it may have changed. Re-capture it in DevTools.') +
+        '</div>';
+      $('stamp').textContent = 'failed';
+    }).then(function () { btn.disabled = false; });
+  }
+
+  // ------------------------------------------------------------------ parsing
+
+  // Movacar stores local (Central European) dates as UTC instants, so the
+  // earliest pick-up on 22 Sep arrives as 2026-09-21T22:00:00Z. Read them back
+  // on Berlin time. End-of-day stamps sometimes spill just past midnight
+  // (22:59:59Z in summer), so those are pulled back a few hours first.
+  var BERLIN = new Intl.DateTimeFormat('en-GB',
+    { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
+  function day(iso, backHours) {
+    var t = Date.parse(iso || '');
+    if (isNaN(t)) return (iso || '').slice(0, 10);
+    var p = {};
+    BERLIN.formatToParts(new Date(t - (backHours || 0) * 36e5))
+      .forEach(function (x) { p[x.type] = x.value; });
+    return p.year + '-' + p.month + '-' + p.day;
+  }
+
+  function parse(payload, origin) {
+    var inc = {};
+    (payload.included || []).forEach(function (i) { inc[i.type + ':' + i.id] = i.attributes || {}; });
+
+    return (payload.data || []).map(function (o) {
+      var a = o.attributes || {}, r = o.relationships || {};
+      var st = function (k) {
+        return (r[k] && r[k].data) ? (inc['station:' + r[k].data.id] || {}) : {};
+      };
+      var from = st('origin'), to = st('destination');
+      var pr = (r.base_price && r.base_price.data)
+        ? (inc['monetary_amount:' + r.base_price.data.id] || {}) : {};
+      var amt = typeof pr.amount_minor_units === 'number' ? pr.amount_minor_units / 100 : null;
+
+      // `period` is the included rental in hours; `extra_period` is the ceiling
+      // once you buy extra days. The difference is what's purchasable on top.
+      var per = typeof a.period === 'number' ? a.period : null;
+      var cap = typeof a.extra_period === 'number' ? a.extra_period : null;
+      var extra = (per !== null && cap !== null && cap > per) ? Math.round((cap - per) / 24) : 0;
+
+      var fcc = countryOf(from) || countryOf(origin), tcc = countryOf(to);
+
+      return {
+        from: from.city || origin.name || '',
+        from_cc: fcc,
+        from_country: COUNTRY[fcc] || fcc,
+        to: to.city || '',
+        to_cc: tcc,
+        to_country: COUNTRY[tcc] || tcc,
+        vehicle: a.model || a.make || a.vehicle_category_name || '',
+        kind: lab(a.vehicle_type),
+        // the site's "Earliest Pickup" and "Latest Delivery"; `valid_until` is
+        // the last day to collect (it sits exactly `period` before end_date)
+        pickup: day(a.start_date),
+        last_pickup: day(a.valid_until, 3),
+        return_by: day(a.end_date, 3),
+        days: per ? Math.round(per / 24) : '',
+        extra_days: extra,
+        max_days: cap ? Math.round(cap / 24) : '',
+        free_km: a.free_km || '',
+        price: amt,
+        currency: pr.currency || 'EUR',
+        extra_km: typeof a.cents_per_extra_km === 'number' ? a.cents_per_extra_km / 100 : '',
+        gear: lab(a.gear_type),
+        fuel: lab(a.fuel_type),
+        seats: a.seats || '',
+        sleeps: a.sleeping || '',
+        refuel: lab(a.refuel),
+        route_km: a.distance ? Math.round(a.distance / 1000) : '',
+        from_address: [from.street, from.postal_code, from.city].filter(Boolean).join(', '),
+        to_address: [to.street, to.postal_code, to.city].filter(Boolean).join(', '),
+        offer_id: a.offer_id || o.id || '',
+        url: SITE + '/en-US/offers?origin=' + encodeURIComponent(origin.name) +
+             '&oid=' + origin.reference
+      };
+    });
+  }
+
+  // ---------------------------------------------------------------- countries
+  //
+  // The API has no country field, so it comes from the station's coordinates:
+  // Natural Earth 1:10m borders (public domain), simplified to ~0.6 km along
+  // land borders and ~5 km along coasts, polyline-encoded at 0.001°. Each
+  // shared border is stored once in ARCS; RINGS lists, per country, the arcs
+  // (base 36, `~` = reversed) that close each outline. Data is at the bottom.
+
+  // Near a border the simplified outlines can land a station on the wrong side,
+  // so the postcode's shape settles it: 01630 can't be Swiss, 8620 can't be French.
+  var POSTAL = [
+    [/^\d{5}$/, 'DE FR IT ES FI EE HR MC SM VA ME BA RS XK SE CZ SK GR LT'],
+    [/^\d{3} \d{2}$/, 'SE CZ SK GR'],
+    [/^\d{4}$/, 'AT BE CH DK NO HU SI LU LI BG MK AL PT NL'],
+    [/^\d{4} ?[A-Z]{2}$/i, 'NL'],
+    [/^\d{4}-\d{3}$/, 'PT'],
+    [/^\d{2}-\d{3}$/, 'PL'],
+    [/^L-?\d{4}$/i, 'LU'],
+    [/^LV-?\d{4}$/i, 'LV'],
+    [/^LT-?\d{5}$/i, 'LT'],
+    [/^AD\d{3}$/i, 'AD'],
+    [/^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i, 'GB'],
+    [/^[A-Z]\d{2} ?[A-Z\d]{4}$/i, 'IE']
+  ];
+
+  var geo = null, ccCache = {};
+
+  function geoInit() {
+    var arcs = ARCS.split(',').map(function (s) {
+      var pts = [], i = 0, x = 0, y = 0;
+      var num = function () {
+        var r = 0, sh = 0, b;
+        do { b = s.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32);
+        return r & 1 ? ~(r >> 1) : r >> 1;
+      };
+      while (i < s.length) { x += num(); y += num(); pts.push([x / 1e3, y / 1e3]); }
+      return pts;
+    });
+    geo = RINGS.split(';').map(function (c) {
+      var p = c.split(':'), box = [180, 90, -180, -90];
+      var rings = p[1].split('|').map(function (r) {
+        var out = [];
+        r.split(' ').forEach(function (ref) {
+          var a = arcs[parseInt(ref.replace('~', ''), 36)];
+          if (ref.charAt(0) === '~') a = a.slice().reverse();
+          out = out.concat(out.length ? a.slice(1) : a);
+        });
+        out.forEach(function (q) {
+          box[0] = Math.min(box[0], q[0]); box[1] = Math.min(box[1], q[1]);
+          box[2] = Math.max(box[2], q[0]); box[3] = Math.max(box[3], q[1]);
+        });
+        return out;
+      });
+      return { cc: p[0], rings: rings, box: box };
+    });
+  }
+
+  function inside(x, y, rings) {
+    var c = false;
+    rings.forEach(function (r) {
+      for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+        var xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+      }
+    });
+    return c;
+  }
+
+  function kmTo(x, y, rings) {
+    var k = Math.cos(y * Math.PI / 180), best = Infinity;
+    rings.forEach(function (r) {
+      for (var i = 1; i < r.length; i++) {
+        var ax = (r[i - 1][0] - x) * k, ay = r[i - 1][1] - y;
+        var dx = (r[i][0] - x) * k - ax, dy = r[i][1] - y - ay, L = dx * dx + dy * dy;
+        var t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+        var px = ax + t * dx, py = ay + t * dy;
+        best = Math.min(best, px * px + py * py);
+      }
+    });
+    return Math.sqrt(best) * 111.2;
+  }
+
+  // Station -> ISO country code. Inside a country's outline wins; a station just
+  // off a simplified coastline goes to the nearest country; within 3 km of a
+  // second country the postcode decides.
+  function countryOf(st) {
+    var x = st && st.longitude, y = st && st.latitude, pc = String(st && st.postal_code || '').trim();
+    if (typeof x !== 'number' || typeof y !== 'number') return '';
+    var key = x + ',' + y + ',' + pc;
+    if (key in ccCache) return ccCache[key];
+    if (!geo) geoInit();
+
+    var near = geo.filter(function (g) {
+      return x > g.box[0] - .5 && x < g.box[2] + .5 && y > g.box[1] - .5 && y < g.box[3] + .5;
+    }).map(function (g) {
+      return { cc: g.cc, km: inside(x, y, g.rings) ? 0 : kmTo(x, y, g.rings) };
+    }).sort(function (a, b) { return a.km - b.km; });
+
+    var cc = '';
+    if (near.length && near[0].km < 30) {
+      cc = near[0].cc;
+      var close = near.filter(function (n) { return n.km < 3; });
+      if (close.length > 1 && pc) {
+        var ok = POSTAL.filter(function (f) { return f[0].test(pc); })
+          .map(function (f) { return f[1]; }).join(' ').split(' ');
+        var fit = close.filter(function (n) { return ok.indexOf(n.cc) !== -1; });
+        if (fit.length && !fit.some(function (n) { return n.cc === cc; })) cc = fit[0].cc;
+      }
+    }
+    return (ccCache[key] = cc);
+  }
+
+  // ---------------------------------------------------------------- rendering
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c];
+    });
+  }
+
+  // `off` columns start hidden; the Columns bar remembers your choice.
+  // `h` is a shorter table header where the full label (`l`) would be too wide.
+  var COLS = [
+    { k:'from',        l:'From',         cls:'city' },
+    { k:'from_cc',     l:'From country', h:'Country' },
+    { k:'to',          l:'To',           cls:'city' },
+    { k:'to_cc',       l:'To country',   h:'Country' },
+    { k:'vehicle',     l:'Vehicle',      cls:'veh' },
+    { k:'kind',        l:'Type' },
+    { k:'pickup',      l:'Pick-up' },
+    { k:'last_pickup', l:'Last pick-up', off:true },
+    { k:'return_by',   l:'Return by' },
+    { k:'days',        l:'Days',         num:true },
+    { k:'free_km',     l:'Free km',      num:true },
+    { k:'price',       l:'Price',        num:true },
+    { k:'extra_km',    l:'€/extra km',   num:true },
+    { k:'gear',        l:'Gear' },
+    { k:'fuel',        l:'Fuel' },
+    { k:'seats',       l:'Seats',        num:true },
+    { k:'sleeps',      l:'Sleeps',       num:true, off:true },
+    { k:'refuel',      l:'Fuel policy',  off:true },
+    { k:'route_km',    l:'Route km',     num:true, off:true }
+  ];
+
+  function visible() {
+    var q = $('q').value.trim().toLowerCase();
+    var d1 = $('d1').value, d2 = $('d2').value, cf = $('cfrom').value, ct = $('cto').value;
+    if (d1 && d2 && d1 > d2) { var t = d1; d1 = d2; d2 = t; }
+    return offers.filter(function (o) {
+      if (kind !== 'all' && o.kind !== kind) return false;
+      if (euroOnly && !(o.price !== null && o.price <= 1)) return false;
+      if (cf && o.from_cc !== cf) return false;
+      if (ct && o.to_cc !== ct) return false;
+      if (d1 || d2) {
+        var d = o[dmode];   // dates are YYYY-MM-DD, so string order is date order
+        if (!d || (d1 && d < d1) || (d2 && d > d2)) return false;
+      }
+      if (!q) return true;
+      return (o.from + ' ' + o.to + ' ' + o.vehicle + ' ' + o.from_country + ' ' + o.to_country)
+        .toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) {
+      var x = a[sort.key], y = b[sort.key];
+      if (x === '' || x === null || x === undefined) x = sort.dir === 1 ? '￿' : '';
+      if (y === '' || y === null || y === undefined) y = sort.dir === 1 ? '￿' : '';
+      if (typeof x === 'string') { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+      return x < y ? -sort.dir : x > y ? sort.dir : 0;
+    });
+  }
+
+  function render() {
+    var rows = visible();
+    $('count').textContent = offers.length ? rows.length + ' of ' + offers.length : '';
+    if (!rows.length) {
+      $('tbl').innerHTML = '<div class="empty">' +
+        (offers.length ? 'Nothing matches those filters.' : 'Loading…') + '</div>';
+      return;
+    }
+    var cols = COLS.filter(function (c) { return !hidden[c.k]; });
+    var head = cols.map(function (c) {
+      var on = sort.key === c.k;
+      return '<th data-k="' + c.k + '" data-on="' + (on ? 1 : 0) + '"' +
+             (c.h ? ' title="' + c.l + '">' + c.h : '>' + c.l) +
+             '<span class="arw">' + (on ? (sort.dir === 1 ? '▲' : '▼') : '↕') + '</span></th>';
+    }).join('') + '<th style="cursor:default"></th>';
+
+    var body = rows.map(function (o) {
+      return '<tr>' + cols.map(function (c) {
+        var v = o[c.k], cls = c.cls || (c.num ? 'num' : '');
+        if (c.k === 'price') {
+          var t = v === null ? '—'
+                : (v <= 1 ? '1 €' : v.toFixed(v % 1 ? 2 : 0) + ' ' + (o.currency === 'EUR' ? '€' : o.currency));
+          var m = v === null ? '' : v <= 1 ? ' one' : v <= 20 ? ' low' : '';
+          return '<td class="num"><span class="price' + m + '">' + t + '</span></td>';
+        }
+        if (c.k === 'days') {
+          if (v === '' || v === null) return '<td class="num">—</td>';
+          var ttl = o.extra_days
+            ? v + ' days included, up to ' + o.extra_days + ' more purchasable (' + o.max_days + ' max)'
+            : v + ' days included, no extra days available';
+          return '<td class="num" title="' + esc(ttl) + '">' + v +
+                 (o.extra_days ? '<span class="xd">(+' + o.extra_days + ')</span>' : '') + '</td>';
+        }
+        if (c.k === 'kind') {
+          var kc = v === 'Camper' ? ' camper' : v === 'Electric Car' ? ' electric' : '';
+          return '<td><span class="tag' + kc + '">' + esc(v || '—') + '</span></td>';
+        }
+        if (c.k === 'from_cc' || c.k === 'to_cc') {
+          return '<td>' + (v ? '<span class="cc" title="' + esc(COUNTRY[v] || v) + '">' + esc(v) + '</span>' : '—') + '</td>';
+        }
+        if (c.k === 'pickup' && v && o.last_pickup > v) {
+          return '<td title="Pick up any day from ' + v + ' to ' + esc(o.last_pickup) + '">' + v + '</td>';
+        }
+        return '<td class="' + cls + '">' + esc(v === '' || v === null ? '—' : v) + '</td>';
+      }).join('') + '<td><a href="' + esc(o.url) + '" target="_blank" rel="noopener">open ↗</a></td></tr>';
+    }).join('');
+
+    $('tbl').innerHTML = '<table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+    Array.prototype.forEach.call($('tbl').querySelectorAll('th[data-k]'), function (th) {
+      th.onclick = function () {
+        var k = th.getAttribute('data-k');
+        if (sort.key === k) sort.dir = -sort.dir;
+        else { sort.key = k; sort.dir = 1; }
+        render();
+      };
+    });
+  }
+
+  // Rebuilds the route dropdowns only when a new country shows up, so an open
+  // dropdown isn't reset on every city that finishes loading.
+  function syncCountries() {
+    ['cfrom', 'cto'].forEach(function (id) {
+      var sel = $(id), key = id === 'cfrom' ? 'from_cc' : 'to_cc', cur = sel.value, seen = {};
+      offers.forEach(function (o) { if (o[key]) seen[o[key]] = 1; });
+      if (cur) seen[cur] = 1;
+      var codes = Object.keys(seen).sort(function (a, b) {
+        return (COUNTRY[a] || a).localeCompare(COUNTRY[b] || b);
+      });
+      if (sel.getAttribute('data-codes') === codes.join()) return;
+      sel.setAttribute('data-codes', codes.join());
+      sel.innerHTML = '<option value="">any</option>' + codes.map(function (c) {
+        return '<option value="' + c + '">' + esc(COUNTRY[c] || c) + '</option>';
+      }).join('');
+      sel.value = cur;
+    });
+  }
+
+  function renderChips() {
+    $('chips').innerHTML = COLS.map(function (c) {
+      return '<label class="chip' + (hidden[c.k] ? ' off' : '') + '"><input type="checkbox" data-col="' +
+        c.k + '"' + (hidden[c.k] ? '' : ' checked') + '>' + c.l + '</label>';
+    }).join('');
+    colCount();
+  }
+
+  function colCount() {
+    var n = COLS.filter(function (c) { return hidden[c.k]; }).length;
+    $('colbtn').textContent = n ? 'Columns · ' + n + ' hidden' : 'Columns';
+  }
+
+  function renderLocs() {
+    var rows = locs.slice().sort(function (a, b) {
+      return (b.offer_count - a.offer_count) || a.name.localeCompare(b.name);
+    });
+    $('loctbl').innerHTML = '<table><thead><tr>' +
+      '<th style="cursor:default">City</th><th style="cursor:default">Role</th>' +
+      '<th style="cursor:default">Offers</th><th style="cursor:default">Lat</th>' +
+      '<th style="cursor:default">Lng</th><th style="cursor:default">Reference</th>' +
+      '</tr></thead><tbody>' + rows.map(function (l) {
+        return '<tr><td class="city">' + esc(l.name) + '</td>' +
+          '<td><span class="tag">' + (l.location_type === 'origin' ? 'pick-up' : 'drop-off') + '</span></td>' +
+          '<td class="num">' + l.offer_count + '</td>' +
+          '<td class="num">' + l.latitude.toFixed(4) + '</td>' +
+          '<td class="num">' + l.longitude.toFixed(4) + '</td>' +
+          '<td style="color:var(--muted)">' + esc(l.reference) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function stamp() {
+    var cheap = offers.filter(function (o) { return o.price !== null && o.price <= 1; }).length;
+    var cities = {};
+    offers.forEach(function (o) { cities[o.from] = 1; });
+    $('stamp').textContent = offers.length + ' offers · ' + Object.keys(cities).length +
+      ' pick-up cities · ' + cheap + ' at 1 € · ' + new Date().toTimeString().slice(0, 5);
+  }
+
+  // ------------------------------------------------------------------ export
+
+  function toCSV(rows, cols) {
+    var e = function (v) {
+      var s = v === null || v === undefined ? '' : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    return [cols.join(',')].concat(rows.map(function (r) {
+      return cols.map(function (c) { return e(r[c]); }).join(',');
+    })).join('\n');
+  }
+
+  function download(text, name) {
+    var b = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+
+  // ------------------------------------------------------------------ wiring
+
+  var HIDDEN_KEY = 'movacar-board.hidden-columns';
+  try { hidden = JSON.parse(localStorage.getItem(HIDDEN_KEY)); } catch (e) { hidden = null; }
+  if (!hidden || typeof hidden !== 'object') {
+    hidden = {};
+    COLS.forEach(function (c) { if (c.off) hidden[c.k] = 1; });
+  }
+  var saveHidden = function () {
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden)); } catch (e) { /* private window */ }
+  };
+
+  $('reload').onclick = loadAll;
+  $('q').oninput = render;
+  $('csv').onclick = function () {
+    if (!offers.length) return;
+    download(toCSV(visible(), ['from','from_country','to','to_country','vehicle','kind',
+      'pickup','last_pickup','return_by','days','extra_days','max_days','free_km',
+      'price','currency','extra_km','gear','fuel','seats','sleeps','refuel','route_km',
+      'from_address','to_address','offer_id','url']), 'movacar-offers.csv');
+  };
+  $('csvloc').onclick = function () {
+    if (!locs.length) return;
+    download(toCSV(locs, ['name','location_type','offer_count','latitude','longitude','reference']),
+             'movacar-locations.csv');
+  };
+  $('euro').onclick = function () {
+    euroOnly = !euroOnly;
+    $('euro').setAttribute('aria-pressed', euroOnly ? 'true' : 'false');
+    render();
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-kind]'), function (b) {
+    b.onclick = function () {
+      kind = b.getAttribute('data-kind');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-kind]'), function (o) {
+        o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+      });
+      render();
+    };
+  });
+
+  // dates
+  Array.prototype.forEach.call(document.querySelectorAll('[data-dmode]'), function (b) {
+    b.onclick = function () {
+      dmode = b.getAttribute('data-dmode');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-dmode]'), function (o) {
+        o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+      });
+      render();
+    };
+  });
+  var filterChanged = function () {
+    ['d1', 'd2', 'cfrom', 'cto'].forEach(function (id) { $(id).classList.toggle('set', !!$(id).value); });
+    $('dclear').hidden = !($('d1').value || $('d2').value);
+    render();
+  };
+  $('d1').oninput = $('d1').onchange = $('d2').oninput = $('d2').onchange = filterChanged;
+  $('cfrom').onchange = $('cto').onchange = filterChanged;
+  $('dclear').onclick = function () { $('d1').value = $('d2').value = ''; filterChanged(); };
+
+  // columns
+  $('colbtn').onclick = function () {
+    var open = $('colbar').hidden;
+    $('colbar').hidden = !open;
+    $('colbtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  $('chips').onchange = function (e) {
+    var k = e.target.getAttribute('data-col');
+    if (!k) return;
+    if (e.target.checked) delete hidden[k]; else hidden[k] = 1;
+    e.target.parentNode.classList.toggle('off', !e.target.checked);
+    saveHidden(); colCount(); render();
+  };
+  $('colall').onclick = function () { hidden = {}; saveHidden(); renderChips(); render(); };
+  renderChips();
+
+  // ------------------------------------------------------------ border data
+
+  var ARCS = 's|C_xbBeAlDeBnAGf@dAx@g@vARl@aAx@oCL}DjDgEr@uAmAqAk@gGs@s@HwB~BuAd@Wn@Z`@qA~Fy@f@yB`@gF{@i@NTd@WJaC?wARgA|@c@|FeAh@sB_BiD@oBf@uEe@}D`Bu@jAe@He@i@eA\\E^~AhAt@xCmB@y@dCpCdAHbBiCj@yCMyHv@qI_BsAGu@_AQgCuEiCu@OG\\uACOr@NjA`@Md@t@?v@tAzCYZ_BV]d@p@vBm@bCaFSmBz@oBZmDbCm@FeCOoAx@@`Bo@?YYeCn@_BnBK|Ak@FkCw@kBPc@k@q@OaCXgAc@yAT,}hJcw_BaBjAoDb@aApAiFUy@}@gAELQsBGmBP_EdA,qkK}q_BsBSyEnAMl@uBzAHN`@@?h@gDlB?b@o@Pa@hAk@MBpAq@`@_ENa@]J{AaDB}Dp@W|Bk@T{@WMk@uCv@kD?aAPm@m@iAKa@q@uBSITyBJM\\VPcBvAoDj@s@n@cBIsAL}AWeD^uCE{HnB{Ef@fBlBrB~DdB`@j@x@|AHTfA|BvAvAb@rAvANdCUx@hAh@jAtDYbC`Bz@\\rBrCrCt@`BXdAEpAuAdBC~@fA|@JbAf@l@EvAd@R`@zAWdBr@p@K~@oCdCFl@,cyMa}{AvBd@tAn@k@PF^n@BMj@`@ThBOWbAf@b@t@LjCClC^jCu@H_@c@w@xCObBJvAQhARc@hAj@`@tAR@d@pAl@`@x@qG[oAv@LRzClADzAfCbA`FdDz@LA`@nBr@Z^Wb@l@l@bCbAvEn@~Ad@\\dAe@dBz@nB_@^Fp@tDjBnCt@fH`Ew@|@bD`DGhAZ\\kBl@u@r@bAhCTlB|ADfD|@FVw@x@n@pAiCc@{AAcAR_AUeBsAsD_BHm@n@DZOn@}AmBwBaAe@_E[iDqA_COeC@iHt@o@\\Cd@lA`B{CxCfA|Ar@jCO`@_DV]Tf@t@CdAc@Jm@Wm@LqCnBcAfC,{uLiuxAp@Zv@pAf@VvCXPb@h@WrAXd@`B[tBg@h@eHnBK\\^~@{@dDqDpAq@dA_Cn@Rv@rBtB]`ChBxAp@[lCb@xAnApAFGp@`ATvEu@bA^dA@~BhAcAx@]jAmCl@IfDa@h@kE`BkDEcB\\k@d@LbAqBxEnCMl@Pr@fAWj@`BbBxBpAE|@k@v@qBlApAj@LdBeBxBkAp@[v@m@TcBCeE`AsE|AsBX_Al@oA@uKkAqAe@}@FZ~@cBtBBb@hAt@j@zArCbB|CzCo@rC,{sM_ptA`C`B,yoM}ltAz@i@bAb@Ll@,kkMuktAjLfCr@tEfINfC~EdIf@vGtGkEG`AdDxPdEjJc@lAtChLgEfDpDlJmGlSgAhBuGfOf@NsCoKmChK}Ck@bGlJNV|C`IyMyFpMdu@cKls@bZnCx\\uGjK,yeE}zqA|DF~@Un@w@|AE`@N~@Q`Ad@bBDzBfA`DAb@LbB`Ak@bAbFY^h@`@HhCs@l@_A~AIbEoAxD`@|AGrCrBjBTxAg@hAkCpBSxCeAzBKn@],uiBm_rA]{Ac@Yq@AV[nAYQg@bFO`C}@vCN^lAj@L,ixAeerAfCwDl@MI]dHIxALzB_CrEQ`A_@x@VvE_BpDYfCL^|BUVb@b@u@\\I|@h@\\`JKrBNf@EdA_Ab@FzAtA\\@hAqAhC_@~KpA~C_AlAwADcA|ATt@CVe@vCkAVb@`@GnCjAz@B~Ce@Bn@`ATZm@t@EAWlAmAfBs@nAQ@s@d@gAr@KzCR|CIjAQ|A{@fBK~@]jABdCaAxC_@h@w@y@s@l@IlAh@b@vBxABzA[|@iA{BiBs@oCFgAv@k@bAFxDm@\\LZp@bAH`@QJgARKv@M~BZPw@pAk@EyA,boBsvsAiG[oJgJwL_|@kCyE{GG|FyEnDlH}I{y@}RdNmM|YxBcGkEt@bIiEtGsVf[qMeDaEaJrDhImHmEuIbIoGgE_G`Gd@ta@eLdFiK`L_G_GmLrNuE_DaGcHy@_QpDtPyEvOrCnOkBsEMnFwCgIqAlEeCeG]bOMyAqAxNbB|CkBoILcAwDfL|AnBgCeAlElJkAPpFhCcIeDwDtC[|@rDjGqAuCJtCg@uCwCdIbDzi@uLhB|EtJJ|BqIhQaCuZsCzDiFbJlBhC{E}CwB}@dBqSWrG[oBqApJv@gIaEz\\lDE}IqK{E{c@mEsFlEsAmEaMbBkC}HiFdAoIaCQzCcGyCbA|EiFyBkSnR{U{JkEhFcIgCoCnG`BaGeDoBkEY_B~DmZu@hKoEK{\\vO}HlFgToSrCoT{AtArGmJhLmJ}Aal@~Ekf@wIcDsAzXk@uEuJu_AgPwQwMoHj@dGiDmA}c@gT_Gqd@uD,}zBq{qA_@E|@sAj@j@CXeAR,kvOamqAsF_CtGoE_IsKqXqH{IpBmBqSuCYsGju@xHbK@lNzE~CuBxA~F~K|YwJeGkGvOmBkHyH|JJv@gC}HoDdJoH,dkAovxASbGfK}MsJxE,nhCqwzAqBtCpHuF_E~A,taEem{AvEd@lAmCeHfB,e}r@evkB`HfT}TjBnKnH`Te@xFtIfUdEtAxQdLnNmI?eChIlNTpBsHxNrAjGxFrNE^~HvYnD~KoC|`@xBxGqA,{zl@ejhBAa@v@s@iAoAj@uDp@sA^[rAUhAiAjAe@lF_A~CeAdCNb@]S}@fBWt@y@vA@`Dg@p@LzAjA,}mk@gdiBhDkLcIkOlPwMn]lAzj@iOtEpAlLor@,ybh@qolBqGUoA}CcEyBuDYaJmCoDCsXuEyA@wCr@qQKyD`@yBz@eO}B_ARwBzCyAf@eBMwB}AeF]cKtAgA@wDq@aE?a@NA`@iGIuFj@{DpA_CZgJsA}D`AaAHcAOsBe@wGqD}F_AoAFq@kAmAh@}BpFiBpA}AzBgA\\sT`AgCMcBZqDBeAhBiCx@qEdCeHlBaIlDiEtE{Bt@uGjAcFT,y~g@q}jB_Ec[i@zQhFfH,s|[sibBsBKcFH]gEfAcAgA]MYe@TeBLcAj@gA}@s@bAqB@uAn@ZhB_AxAiBl@]pB[B{@q@sACoKvAsAp@wEWoBfCcA@uB[{@Pw@tA`@~@sAI{BkAuAD{Af@a@Eu@_AYCiCJ}@TiDpBQd@~@PDhAjAx@`C?l@h@jBh@MZf@EN^Sb@_AD{@lAu@OmBBQfAc@^eCf@aErD_AbCgBdAsAZoACiFwD}BIkAq@gAFIe@i@D]^WDMOt@eCxBcAx@uB~@{@?[u@UcCb@{F`@}Ah@oBAm@rAeAZuDPb@H]VOfAYLUe@k@AgA~@yAq@aIFmBcBm@@s@j@\\fAy@dAR^|Bt@jDVH`@aBnAyACkBXXZwAnBwCdBiAHcCo@sDSG[x@MHm@sDz@Lb@YR_CN{DdAgAjAiAi@oAEaFdAm@?mA_@]JOzAu@Pv@f@At@eBtDe@ZyAF{At@yAM]L}ApFBjA,axc@ku_BtBHpAp@v@@hCc@fE\\h@pAbEnBx@ID~AvB|@lGbAx@b@tAnBX`ABzCt@xA|Bv@jBExAVdAvCd@V~B@hCrB~JbBhAGxAs@|Cl@bFkA~AOxAJhBr@\\v@rCvB~CzG,ab`@w|}AbAu@ZcCn@k@rCRjCo@jBA~@wAtFw@fDTdBrBt@Rd@Q`IUxDFhB]fE_BBWj@CN]n@BSQhBS\\g@lA@fB^zAE~HcBlCiAvDs@hCGZWhAfA~DZMw@Vw@xCGnBYp@FZbAElDz@bDYl@T`@nCYfCAp@hBlCdBNdDf@Z`@An@q@z@BTi@vBVfB]n@e@hBpB~Ct@vEk@zGUbAQr@e@Pg@y@i@hByAzFiBnAM,o~Y{f~AtDiEfBQfAa@v@iBd@@rCq@bA~@l@MvBaAt@yBnCmBpFo@z@iArGaFTu@vB_AlBYZDGXb@B|CU`BsBhDkAh@aDnAWfAsCxAo@JcBvC{@fAuAU]sBk@QeBi@FqA{CxBs@ImA`@UfACnI{BZgAxAk@P]MkATu@|DwBy@i@CYdAkAqCDg@PQbA{BVRj@o@b@e@xAu@T[KHcBu@sA{BoBiCu@Ou@eAg@eFUeCH{AiA}CUiEjAeA@wA{@YuBkHGmAw@aAqBiBXi@M_@s@}As@kAt@qAFcB_AH[{@e@Ly@qA_@kPa@}Ae@Di@[_@{@?iAk@uCAwHyAqA}@eFAy@_@Kq@~Ba@p@]Ua@bCWs@mAo@_@iCHqAd@_CMg@a@i@v@mAR_An@Cn@r@lAWJeC]^tCmDz@uBJs@Sq@kA,o~Y{f~A~@dBaAd@^h@A|Bv@tAnAP`@jAvAY`B{@lEg@bCV\\Ve@xAh@hAB~Az@jBfGjCrG^lEt@fElBjCVpAfAdD~AEr@c@j@mCbB}@fBiCjAwBzCdEtF_@VoBLoBOgBjB?hAbAjAEj@Xf@Q`BdAt@~@SjABnE}B`Bc@Hq@Wm@u@QxBiASc@xEOlBVvB~@pABfBu@h@gApCRpBOlBT^a@e@gA`Cr@w@bACr@`ApAzMKfDV~@n@nK]|@f@f@tAb@XfCTjCE~AhAo@LH`@zCRhCpAn@CCu@h@KzElApEAn@e@Im@bBgAfB_@JOoAk@`A_@bE`@h@[vHcA|A~@jBEx@YEaAv@B\\Fa@|@T`Bw@f@GbAn@tAnBx@bC`CdCn@|CLQe@k@Oc@sCb@MvEf@z@{Am@WFk@`BaBx@TTGhAwBt@PvBQr@Jf@MHcAr@Wx@J`BdBt@N~B@bCY,usQ}y{AbPeFvCKZ[jIQdA`@vCRhBe@\\a@c@ErBy@t@APf@OJhB?`@w@g@o@LS|@CjA_At@bA\\kAvAK^JS^nD\\r@pAzAl@@dAeCp@{Em@mALHl@NSZFAlAf@TlAaAvB^Xj@|DD~AU`@o@nBKjBJvD`BxAJbG?Zu@zCMhBlAfDVpCi@s@?o@_ArCV,qkK}q_BK_FeCoC\\a@qDyAJW[@Zk@a@{BrEY|B}@|@H^s@~Bs@bBiCTZNQhAiBD_Ab@YY]R?c@oB,i}Jo{`BW[XUMg@y@GYYb@_ASQaAg@cDo@De@a@c@wCESk@bAmAYcCv@_A[]`D[`BPn@i@OOf@EKW^[oCuA_@u@rDOT]YIxBuBd@WhCF@w@^Y,uuJ{bbBCYv@_Ay@KUmA_BYMmB~Bi@GyAvCGhBXl@{Cw@QoAj@c@AyAwAgIyCh@Y}@[l@IbBh@l@OFqAuDsE{Au@[uA\\UWuBVeBtEmDY_BfCe@j@c@Yy@RKbA[lACm@o@Ci@fA{@EQqHkAoCV|BuAcAWcEbAoAEk@f@mBPE^iAMF_AiDVcCw@eEk@qDAu@QeCiBBe@|@i@lEcAB]MS}@MmAgAaDSkB}AuAWkBsAwAa@ZkBgA_DtCkDj@ZdBHpJ{@f@[l@cCoCc@nAm@BgAeA_@_GMqH^e@i@q@aJc@{@cD}C}@aCh@wGm@}A?wB,u`My~fBwBuC_F`@pS{A\\kE_CoGsLcEkl@m@qGtHtDfD_GrB{E_CvAsGqPhC~ArJb@kTkI_KaLxB{XcAgQpOqOnBnNgCxJuL|\\sEdDeEgIJi@gCxKcDkHsGxP`BzCiCwXoIdSiMv@aI,i|O_fjBoCLuDa@_DN}Cd@gLx@a@N[fAc@FoDAiB_@g@TaAC,{lQs`jB{GoBgNxEwFm@}CvLtJhD}Qa@@nI_JmFyXhGiXwChCrKrRjGkGjD_QkBuP~EoMqN{WmAu@~DJiDqYaReWlBd]xAhClFoR{G{IhBeJwCaDrHaVxJgMeDcKlMpDrDwLbEiLI[vB,ozZg{gBDvAgArBMpDoB`CuAhImAt@xBzBQrB|AdDpD~AzEpAi@~B\\|@r@Zy@l@}BRaAl@iGpBcBfBsBdAwB\\}DtBfAtBm@h@nA|AfBv@InAyApCJb@m@\\sDl@]`@?h@d@\\[h@h@rBSZaCz@zBfDV`DtDjCRjA_BdA[fBoCpAWb@WdB|@nADhAk@ZeJ|AcAf@e@pFmBnBEdA|@~AfAxF|DdHbBnA?d@,cwZcjhB`@t@b@Hs@v@,qvZkfhBpUv@_CaH_HjBE_CpE{BvIvAVyG_[bM,o~T}kiBsB`CbRqAaFaDmGpB,cwYofiBq@bFtBuCjJ\\tCzE`O{BuF_KbGyBuHl@mCaCf@xBwINnH_EfF|AT}DaJw@KlEmLAxBdGmF|B,crOg}iBgCfCtIu@mEqA,oiOgijBw@jBsO?tTx@l@tFgGeSnBhF,cnn@w_pBiNc\\xJ}BrNvHdVkEdNcUoVuCxZLaEmBnEyE{KcBfCsCLbD`HmB{E}A|AuGce@uBzAkFuJbAtB}AuIiCmZh@{@qF{d@~CmGwAtBmG_KnEc@qEeG~DeIuBgi@bDaPjEmy@rAcHsCeIzFvQ~Cl\\p_@gDj`@_RnUbPjBvIlP,qlt@ojoB`AVrH}@`DCnEwBhDKl@WxCnB`GJzBp@\\f@~AOrAVhC{AjGiA~FqE~GkCRiCzLYp@YjAkB~FTvAk@^y@hDi@vBmAnCWtAkA|@H@`@cAtAfBl@z@MdAeCr@Q|A@xATfEbBvCJnBl@dD]`BvAlHDvDhAnArAn@LnCQ,}jl@qgqB{D|BnIgAbZxNvY~@vDlKrJ~CjBkC_NgI|SiFIyCsGWdJyHgICyDtDsEwF{CvAaBeDiOcBeTb@iR~E,ktl@glqBzHxA`IsDmGoBoJhE,gsl@ihrB`CrBpJeBsNM,gpj@}_rBvMsBmXc@aJgFkQlEuE|GfK~BdC}AzLpGnO_L,qlt@ojoB}I?`@bEqStGfL|Z{Pn@`BxCiOdKqDfQbCbFzL`ArPrJfB`Gfe@aAbW~H,ybh@qolBfDqQiAkHsChFt@sYqSgJmAoPiRyPku@oJoBvIs\\lLeG~OcZfGcO{A_[iN|Dce@,}gg@wyeCp_@Z}M~E_@pEb@nAjErEhDfBzJbCwP~BdPzFnA@`[sCvZcDbTRlBI`LqCbPvAr@jGiBhKj@pAjNpJr@Dzb@mGhE`ChZ|GfK|OzHvDhMr@pChDmR|Lj@dH^`@bPjElDzAbV`QdNvEoBjH?bCxYrF~^v@wEdSnDhEdBvMGdH~@x@jE`BhCvHrGvDb`@nXqQxDyHr@e@n@yAvMXfAnJ|Hrl@aDvN~@dMfCpCdAhWtQtFtBcBvFfMpJmM~PbGzD}BxI`CfH}LvQEfBtHx^{N|GeCXgCB}Bf@mO~IUh@~AtFhEhDdA~Dh@JtIQlMbAv@XwFnNsE`E{FtI\\tDpDhCb@z@eAbET~C~BdCvHvDdHxBrKGfBPnAh@LbAuBhBHlChCjBjGjAl@pAaFvLw@|EfA|A|@|E`DvIfBt@`CN|DUZ_E,{iU_frBjOyK~GhCjQqDbJy^_EeG{BlFx@{IjLzBwGbNdGzDjD{IzIgAcQhYpH~@jBdLdDkB`@bEzJc@tIzCdRiImHfIlWtC{ErDbTdBmFvChPrB]zDjl@jWhHR`B{EnDxGxw@pDwGuEjN~A`E_BqJqAdLqA|AzBPiCsAbGpM{BuRkHhI~AKoExBbD`Mu@dn@iPnI{KqCwPiIvIsGcEmVxFfIyAyByCg^uDb\\lBzFxD|HaIuNcDhFAcI_FeQuBfRfBqC{BnMG}AcBk^_JfRbAcBuFrUhQjAuDuO{@rT{B`IbGsGg@wCzCnNrBp@uFbDrGnC}FbAvEdBmFdBlC|DqKkIuEyArBwC}GnCpMeHwI{JdCwBmF{\\}EbQ`D`AkEpGpDrJcDig@wOrJ\\z@uDiPsI_Q_BfF|ScGyQg[wFxK?mDgDvSxHmAkDzWbGlFcDjApL~GU`O|OgBqLlN~AaKiMlShOxOwLyHyAOgGwT`E_E}PrCoAhH`G~QlBnQcMu^tIjKeHyQgEjX~BdFuM_ZfB}C_Dub@}AcO|EiNgIeUlDbDlHaJw@mBlErEmMgZOvCeB}S_DdRbAvCqDgOkKfRpDqApM~TdBeBoCzZqA_HcJvO~PfOiC~HdAm@mBhe@vFjMq@lGeD}JFzOuD{LgCmFtD`C_EqV[|b@lAkBwEfI\\ot@sAbf@gBjAwAsLMfLcAqPJt[}Ag@}EgJh@pD_BwRqGqPn@pBnCcS{@rArEyD_EyJfCtFgC_Yz@qTmClTdBtm@_CoMw@hq@h@^uCgOaBbSgIoEy@oPzKcGyBpKmB}BgCoQjEdDcD}Mg@xBtI{EoF_EnCwRLpZgIsGf@jDuCySwDwLlOdGkPiI|@_H_EoPdJ`AtIoM?`LUaBqHsTM`YgBjIqHfa@t@_ZsAvXcAEcC}Om@wClB}G{DcI~C|@iCyKMeAhF{@}DaWxFwMmCtR?wBeEqRsBmRnArCoDpk@bDaS_Elk@fCoAqD{K?bRcFoSkDmOnEq\\cCub@~RzWkQzOuBcLgEcNhMkVtB|PqGyNg@dFwAfJbB_E}AlMIpCsDu\\HzBaCwUiA|RTfHyD_QmBvDoCaLl@qGiCuCxI_W{EdO~@dA}ByQ_BbSo@uXcAbD_B_LmBkOnL~FdEgJaAkN|DhIwI{q@a@hHyBgIiDtOhB}C_Cel@aJtAwBzROkWiHpM}@wE}Cfp@fRqUqDuGzBfIpEzr@|LbIMzFkHiRmExa@jEsMkEnMKug@gIzNf@qJiC~Jv@{BmHcKPj@cEyKZfFyBkNwF_HXjIeC_UlBdJeDyQeA[gF_KxHeJZ|DrEeI{FkNw@rLZgCcDcPaBpI_AzDnBpFkG{ZoDlKw@kEyB_]mBpRStg@lLqIcD`Jk@wZsCzYrAok@mKmLrCam@yRvYlIfHcDiUu@d\\f@{NqGaKpAhLiFqMvCdDyBmHw@vI?bAcGvBzCg@mC~DjBdDuCwGaGgQ|DhMgF_IeAfAsGkIoAoS|EvNsGgFqDbVf@qt@aJQ`G{PgAhJsCwSa@uI_E~cArH{]aG|LaCfDxCzJm@}FeH~JmBkWbCjEcCuXLfLaBuOqAl]pBgIyCfLsAgUx@bSwCg\\l@iKwAtRh@cJ_BdLqAe[X`[gGyYqCZfCiEkGwDpDoFoDoQrAxQcC_EwCwVrAhM{BsDo@mVS]dFiEcFkX|GvFeGuUv@hi@uCkE{Bt]xDOyBbUfAmQeJsKtA_MiCbSsAwSoDgEpAlHw@CxChJVuT{AjAhEeQ}BiM|K`G}JaVsDdh@v@iAaC{J`@|PqAsFkEo`@r@~GkErP?k@aChd@rLtAkDgSYnTsCsSeAxNJiHcBoK~BwPmDcBbCuLgEwEfBuKyEhIsB`UOdH~CfFsAsUgG^fFoLuAoGsH{BvLuZnMjPyKgOlEzC}HwQW~Wg@wF_EaJf@pGyBpPn@oJeAxNwAeJo@q_@|Ilc@uLuw@k@}KzKkDiCvIsI_f@XfXmB}CcDf^~DtBwCh[nCjCoCwHo@n@_EwUuCwJpCiEwDyY~BxZ_EeMuBcSbCtRcD}VsAbGyBlQdA{BaEuIqFy]iAhHgGgOsK_NjF@lG}BcG}FjEuAyBkPhAza@mIe@{BuVgAaItHyUtCpKhCuSn@|HkHxTiDgCiCcKRxOa@bBuCaRcIm`@u@zNfXiLiLcVv@|NsAbAiDoTkMcAdDgCyEeHzCpAxQvYjSk`@uReVbDpUeGRoGee@qJlK|D}F`CiHoDQpB}EsKwO~@_`@pNvIyK{EqAw@~A{BwDvRMyQeDvVtBz^eHkMyBeBxB}BaFaSzIfC{EiJcCcGrDyJkB|@nHwPNpMqAuCsDkb@dBtE`Dva@lDuk@wEuC~JiV}@oCkAtUgCcM_BzHwC_Qw@tLYyQ_BhEyBiX}G_ZhBlNiDqNkHeVjCdCoDtXuCmHeD}MlDCgKmJfCiL}BhFbEmHf@mDeCwD`GmFqJuIhBzDbDg]m@ft@pUwIq@rJjAeMbAdRdMo@hIuDsDe@nCuGe@}PiKdEwAihA}d@yChLxTnDuRLlHjPcRiFcQRzEaFePCvH_HsL[HaDcRd@~]aHmLN~DgDyQlC_EwIoCdCi\\s@[lEoTRtPbJr^FeVlB`]bGug@aEf[vLeAlByQuCrBxB_LwC`S|ZsIyAaBuPyH{DiFvApE{EqWsR_QOcS`EdEdGoZsDdCtFmW_EiPnFrTrBi^i@yPrG_Iy@cGjI~_@dAjWbJj_BsEqGPxFxByLNhFXqz@fFbSzEqV}AzNjN}`@eFtDnDgGgBeFfBh@_KwFM_BhLcH_HkUVmDjGxIlHvf@cFaFxCxEfFrm@vGvHvKtOlC,spw@eyeCzF_Co@aFqVyIgFmDzGsFnB{C^Sjl@_Gp@g@AcAjLkA~M}HvBk@tC^|FQfBJbBjAjFh@~Bx@zAHVPy@TnAf@fLt@vDg@pBBjDc@xDR`CMxIR`AL`CvAWb@x@f@jEpAlF~C`Kr@tAfAuArA@n@vAjApCv@e@d@d@|AzAhAgA|ArDrBbB|DcAdDh@vCeBzAHf@rA\\zFnEdH[|AFpMlCdB~Ab@hFfJtA|A~Ar@BxFeDtDw@tSuA`HgAnB}@rKoAvCAbC`@fBhDxDf@~HPvPfC|F}BfBKlITrPeB`IZjA{EzDcAxCeBlA_BrGoB~VeOhSg@nLfB~BrBsFxDfDdBnSeCpFfC,mvZuldCCbC`I_C}HC,wkZmidCeDnB`T|AtCrDvGcBzA|CXqKeYeEyEzC,uy[}wdCzDwDuS~@xMvB,yhIeyrBfCvHl@_PuDfF,ujI}usB^tC`EyBpApH~AgPsKxE,avIi|sBzF`EtBkLqJhF,e~IsitBi@zHfG`@bH_EaO}C,o~HqqtBfIsBg@qJ_HdN,obJiouBVvKzIfAbJ{EwUcG,auHqnvBo@nCjJrBsAkHcBvBcCoA,aoHa{wBkUpAdRdCdBwE,oeJosxBsApCnNPaAyDyIT,iuJwzxBsDjBvO~DIwGyIS,ikLspyByB~AbNrAYsCoI_@,_jLsvyB{E?lBdClBeC,ceNsezBqG?pGzB?{B,o|M}czBcC~AdJxBnHqAs@sCgIpAg@aEmBzB,azNmozBuCbDdLZoG_E,gqO}ozBcDhC|G`@|HoCwL[,umN{uzBpGiCiQ{B_D`FvMb@,ezP_d{Btf@jGzLi@eGmEkRSzHwAeWyAuJpD,oiOmj{ByZ_HXhF~Yt@,k`U}a}BeGjDxMcA`F_HuLvD,etTkw}BnOfBcPmEiItBpJrBScC,qdTyu}BbGXyVoFtNtE,a{Vge~BfChCbJw@gLeGcArD,eiWcx~BzWzKePmNdGMyCwEaJvH,imVsh_CnDfEpGa@wAkDiJD,sxW{{_C{Ka@l`@tFsFeE}KM,{pWw``CnPxBwO{KW`H,c{Z{dbCfFhIhIeDqPcD,}nXc_dCiCrHdHq@iArDdMhCwO_Q,a}XaadCyHDlKvGsA}G,oh\\yodCbq@fLqE}HaKJ~EeCqVyBm@~CgWgEvIpD,ma_@wwdCPrCbQlAgCoGmMl@,yh`@cleCyD~A`RxA_IkGgBpA,kr`@ypeCsMt@bJnCbJoFsFh@,ah_@cfeC|@nInW\\hI|HjCeFpM|JvQw@wKcJz`@`OiU_LvG_E{XmBhJiFoOv@bOgCyJsJkOGbH|LiMu@rNpMmFoE_MIwIoOyQzCt@lE,kj_@oueCrDbDjLcD_R?,yb[gbeCmMsIuBpCwLE{AsEiBnCwAuByEdAjHaHaGcBmEvJ}Gu@PjJf`@zCcSyEtGkCpX`HvLcA,qi]creCbEz@uG{Lcb@yKnBxHvRfHlME?|D,mhb@{rfC~JxJyEzBf^`A^{AlTvJd@qCrS\\oWeG`PJmNyB~MsAcMYxKeDo\\v@hF_BkL[hRuCaGpAu@wC{QvC`JsG{JvDAwD{DtBsE{Av@tGaFuCD|DcGS,mbd@ikgCjM`Ovm@IOoBiOpA{EaBhLgC{ZLpPw@{@gCoF~AmHkByEfFdDkK_SpB,}|g@evgCwGM~NnCpAgEyHdA,eie@awgCfNbKxNdAhW}Gu\\oIqJtE}GaCeDnA,org@w{gCrV`@eH{HoNX`@~F,{_f@e_hCwIbArVzAdM{JaGaA_R|G,swk@aihC}CnBze@cEoQgBmAzBsAsBkIrD,oem@muhCbPpJhPdA{@gG~DrCzG{EuQiEeDtCy@qCmMHtC_D_KrF,e_n@i_iCeAnC|T`CrAaMkUnD,kxj@}uhCnG}@fGjCeJyGfQd@jBiCwYhA{FuDoJ`FB_HkNlDiLuCfFwCmO`Ay@iDeExD~UpJth@tC,q_n@eriCwILzLlA|B_FqO~@nHbA,o`r@{viClc@zEpGmBaHcAxOUgJuCmNdBfBaFuGhC_Mi@rCdFgJgA,ucX{m`CbBjCxFu@}IuA,ygXwx`CrApEbDoDwFa@,_{\\qucC|SDaHuB{JnB,}lg@aogChHpDQ_EwGL,isy@okgCfRhCaGcHeJxC,iue@evgCvDrG|Pn@uVcI,umc@wwgCkBoDoN~@zQnB,sqd@qbhCfCjDbJiAwImEsCjB,tpNm_jCtAzGbbAxLhA}Bod@uG}JkGuUu@,siIsitBfA`D`BwFiDtA,__IscxBxAdErDuEmGN,skUwc}BdFn@]kCgEzA,mdUwg}BlAfB~GwBmJN,ioo@mziCdChCvH}@}LkA,ggJ{mrBXzA~IgByJJ,ktIusrBd@fBrBuCyCl@,_wJwxrBwC|@jG`AsB_C,{mHgluB|BdAOqCmBjA,}gg@wyeCgBb@oFLiCp@}AHm@~@zAj@c@~@kIr@aHfBoDxBiELsBzBwEf@aH~Ag@|@kJf@qHtDmM@gCNMZ}CBmHt@kBCmDrAuBS_ErBeI|A]p@qC~AJzCa@`@yGo@wC|D}JzCiCRe@Xr@hAlEf@fBv@G~FiCjH`D~@WVjBpB{ArAkFSsIbAZrCeANdB~AfGz@VdAo@TpApAMf@kDlBSnAuApAaEpAgFlDmCfDf@VxAB|AnAU`Ch@rFrCp@j@h@lB\\?^|Cv@Rl@eAnCZ|AyBzE{Bz@mE^kDnDyAn@eAhEwEtE?b@,een@}p_CxM|BtJiCxOGrAfCnM{BxDrFb[uKUjHbOsE~C~FhFq@eJnDrEw@xDxCoFyA_E|F`g@sJmZdJxTZcJfCnE|BlZTiLtE|CxApTyEwShJn@fEha@vMyO`C@jE`IeCh@bBuUfEoAvBdJQeO~C|f@|QfQnUvIaAxExGhCqC`@fEn@}CpAbD~KKvTbM`NcGmCbH~LgB~M~PzQ_D}GxBbKw@oBhC~Ji@uD~B`JzDvMf@}SrAzIM{ExBlGdCtI_AVvDrJa@qGw@hCcAzGlAnEmJpGJyQrOBfCpFU_KtC~DfA|@oBjMdJnPoE~DhBcBtH_PhE~GZfIpPmHzQjUuDeGdAvIlBmHt@~Jt@eGh@tETwGjEfF`BwIhDdJMgFjDlB|PcJhJhHtCqHhCuMq@_E~G_RgDgOhOaKk@aJ|E~PeDiOlNqCsCcH|Gg@aFkDtIqIdBhAxBhH}DkAzCzJdD}TE~q@lQkA~CzFyBvI`BgLpDaEoBoHlA]aEaInEdULiGdJrXdEpFnJlFgE?tCdFuPfCfR~GcAqA|DlHKi@lBrS?kFjBzLnCpm@Sce@v@mHfF~JzB|S_BcUvElG\\mIz@vDhBiFzC|AzB~HoCyGjSdNsFsBpE`FO_NzHpPmHoQ~JrGMkB`DzEBoItHvLhKcFjM|GM_AdPbMlGrWva@rOuFvLfC`g@u@uApGlKu@|LpEnHdLqIrLjJhGvPwAf_@pDfa@iAqHaChCeEsGeHvd@ce@uUfC~JmJwOgAwAwDbc@qV|Qu`@rCfFvC}Ai@iRtLHcJuf@pVrDgIeJhFqAxHjKw@cJtK`EaCsMtIwY{KwDiFvE,im`@m}nBpj@xcAP_Vea@}k@}H[,_ed@w_pBdP`NOtHqH|Cn_@rNJtGjMvDoFiJpDv@jEcKy@aQka@{UyFnD_BqDyJ|A,qsd@qfpB|IvFTeFsJQ,u|UukpBxKvEv@}DqMY,}`VkvpBBnEtTjB`BsCiOuGqGlB,{~b@svrBhDqAuOpAjJ?,kfc@mytBfHuAl@sGuIhJ,amc@efsBrEfDhAgCaMaBbD`A,kyc@alsB`Ev@mIgDjCnB,gbd@cysBpEn@gC{CiAjB,uqa@afrBj@vD`AuImB|C,spw@eyeC~`@~FmW~B`U`RoLjSuh@dGki@dWxDbJ~t@nd@_t@~p@gLvWXnBvWt@oG~BdOrSyNz@a@dDvNnDgA|FcH|EeTv@{BxFbMrCyCvI{_@`JJjKtb@nPmkA``@{UdRfg@vd@tjB~`AlzA~h@j@jDhOn@bNqFxNrGpXZu@{HyI`@zD{CxRfPpYyE}JhHfCfAjKkEoDxH~IwC}DlB`Fd@dCkFjIlFxJu@xPxFz@aCpS~EfFmBoA~DfHfC?oBhGbBM{Cp_@lFbV?iFiFlQpMrTz@iYkKlLjDeHiF|LIRsDnBpAzDoB{KyKva@lHeEeKvS^hWcHjFdBoBmHhMvG`A{CrIYzE_]mJ?`AmTuFYjHiCsI?zEeDsMpA|\\s[qH}LlFuKlBvCbDiCuCcJ~G[[cD_YsWaKxAlJ{JkWuAqDhFqA_EaRyAjGeH{KXpFwEcFrCcKuNoJtCcGmIcE|@{BqDaUoCf@eGaLv@|@}Cco@oYcKcPya@aFuOhDtIkGyN?pMyHyGoUdQiG`Wc@zF_GaIiHbR|GbNkB,q~h@mmtByHi@pAjBfFaA,_ni@}ptB_H\\nIzBo@yC,quh@ertB_Et@bJMcDg@,wrk@cttB_FeBbM~PbGf@L{BtF`B~AiFcJu@pJOaAmCwWi@,udj@qxtBkMlA`OHu@wA,{}i@{ytBvKoAo@cEgJrG,{yh@}ozBdJ~DfIqG_LxCmGgA,msh@orzBrDqAiFeAt@vC,ayo@}`~BbOnEvIkD_PsB{HnA,_gj@epzBtCgCyHk@bDrD,}hJcw_B{Am@S_@`@KmByBH[bAQUaAL[xAOt@eBbBu@Nq@a@[Hi@s@BtAo@GQyAoBaB}@Ro@aAa@Cw@s@g@O{@iC}@i@kAgAQ_@h@q@JyAUe@bA[H,s|C_xbBur@}P,ipE}icBGjDmArA{BT}AGYqA_EQkIdAIdAw@\\wGKsIyBcBq@mAcAYiA,yfGoicBwCfEfAiE,iiGqicBiD`@aCIIa@fAgAQq@VOsE}@sACD|Ae@PqDBiEgC_BQyAd@@zBvAW`@XuDLqBZ}Ae@mB}B_@E_A\\g@l@V~BeAn@g@jAsCHc@Z?dA{I?eDy@i@@sAp@UrAk@VqBTcAb@oCIcB~@_BGW`@b@f@m@^pAJM\\Xh@NJf@ELl@[TnB`CsA?rA|Av@NnCdBCl@a@\\uBd@VdAe@Li@?o@e@qAh@sKB,mdg@axpAeAl@a@Ao@m@kAz@sAm@u@oAN_CYoCSi@{Ay@aKaB{DkBcCx@sCjCyBJFsBoCuC}BNRo@_@M_AV[Ya@PaCM,wbi@koqAaFTwGkCeCIyAq@eE|@gCCqGuAgAi@m@rAiB\\,qsj@qsqAeEdEiAh@[v@gAfAmDzAoDt@WV}B@c@j@mABuAbHg@XyAtDyANc@h@R|A~@zAh@JR\\e@bKb@h@GxBn@Z,iwk@ovoAtDIxAJz@f@n@hHj@r@vBoA^DHn@bAv@tGTx@ArAa@lCLJi@`E]zAPpBz@lB{@tGlB\\tA|BvB|Az@Jz@VRx@HfBQv@RNj@p@BrAv@v@GvA}@pEOvBfAbBV~EQlC^dHH,i}g@axnAN{A`@WlEa@lCz@`Be@|BcIxCe@ViB`CqDj@gDGi@[Du@e@a@wAb@q@|@SLy@~@y@NoB}BWw@m@t@yCNoCUo@oAgAPgCq@U,i}g@axnAC|Al@hAg@x@mBxA_@~@^fEjAfAl@Nh@rAp@XnCW|@dAjA\\@tB`AtBjAr@D|BTn@p@VOpAf@vAjCt@zCGbAR`AE`Ad@n@dBzCLg@hCy@n@cBvCp@bAvDg@FvAm@~@^n@bAd@Dj@bAGVt@^D|D{ApCc@^L,_af@{olASwInEoAtAuGdWqIrJ{KqJnCpDeKiCUlHeEyC}N{GYv@cD|AhCiCcSvF{HwFeEvCoCwIg@h@kLdMaA,iyd@wvpA?iAf@i@AgBg@OIa@f@qAi@wCrDyBLs@yFmGa@_BiEgD}@eBmAo@cAoCkBsAm@Om@Po@|AVtCc@|@aBp@eACoCgAsCIqB}As@T,aef@ebrAoDhBgBrCVr@s@l@Cv@a@l@}DBwFfCwAlA_BnDE`B}A`FR|@t@z@It@,aef@ebrAWY@uAw@cB|CkCSw@qAk@uEz@q@g@SoA}Fo@,qvf@usrAeGy@m@k@Ri@jAm@Ow@a@_@kBQ_AcAcAB_ByAq@sBtA[r@cBGo@}BWmEeBaBF{AnAp@H@rAkIlCoDN}@`Ao@`Ca@Nw@Ya@B]j@M|By@n@yAHqAh@yBZFtAp@vBsJn@_C~A_D]mB`@Qj@jAn@`@`AS`@Rl@bBxB`BpABzBf@\\vBXh@`@@n@mAvASv@,ixAeerATp@ONf@`Am@Cc@TE^rA`@oAfBiCHu@g@_E_@[}@_AJi@W,yeE}zqAK`DeGt@lBdD~Gj@iFvNjDpFht@vVjI`IrdAvN|QxM_H`GhJpFhDa@yGgBrIvAjv@bbAiIb_@qWfOpm@fXKdGnFxApGzU|DjBmHrF`XnDrL{@tTlKhMjYdMxKtMiElKb@xHpGlLkCb]nBv|@w@~NnL~_@`EnHzOjDmAZhFxIpBpYoJ`PoT}CxBgBqAnLuFjAcF{MiJjH|@tAxD~EoHpW}KoA_GzExBeAzBj]i@,jnMqsgAlBuPvBaD]wAsAgAw@yD{EcDu@mAkAcEFw@cBa@kAHq@OiAuAsCf@q@EwC{I^QzBJhAj@pAFl@a@nAaDx@g@pFiGrAi@o@m@Tq@w@{B_B{Bh@g@Bc@m@cDsDiBy@w@{AOaBw@G{@Zg@wAkAaBmCX_@?iAz@{@`Bc@zBb@z@OVa@Y{@Ve@vCq@Z]JqAYe@vCkCHwAc@oCLSzCu@d@{@`A[`CoBpAkDoLNqE]k@T}@@cIe@Ui@Do@g@eALy@]c@_AWq@y@EoB][OwAk@aAvC{DvB_@t@{Bu@yAyBu@uBCc@SO}@sBgAc@o@pBkBJ_AwAqCdAcBBa@gAaCp@}ECcDa@GGYHYbAa@z@{BlBkBBY[_Ai@O{BFu@C[SmAyAScB_BeAwBsCgDEeCo@aCwA}@kAi@??g@sB[kAmBE}@sCqCbCsBzDgA|DYrAn@lAKdAaDiB}FfB_@GwBhAe@Zh@pERz@MfAsA|@GJz@n@TrD?|Am@tBn@zDyAlBl@CzBh@l@lEbAjCDdBfAr@}A|AW|@`AtBJ^K@S_@}@jBCxBo@v@TfEV\\b@~@?PoBf@Jd@pA`BDlB~AvAPlDGEmAtAc@RiA_BwBsC{AY{@N]dAa@hBTXO?uBb@q@z@^tANfBv@rHd@nCx@jBDr@f@b@|@~C|@,|aPa~pAbGvCZcM{OmJ@{AbNvDiLqJxJhAdEaCgFL_EcMpPxHb@aJ{GuFfLpCdA_IxHIWgGwIkDfEDkAeByM{AlB_BeHoBgHzAeToBm@qBqFxDeAmEbGeAoGqAfIf@g@}DgXmKeBbEwIyFJbCiS|A_ElFeMB@~CiEmDuu@GqLyD}IjEuPJf@~AcF}@cr@rH}g@aF_@nCoMyDeHdBx@lBi[tDyB{EcJk@{ChD{@wAi`@xF{SeE,xlIm_eArB{CgFXrB`C,k~AkpjAmBp@jKT_BaF}DxC,kcBejkAtKdOrJiBwGaKqNY,upEoulAmFbAf@rDpKbP~JhFjE{DvIYpEmJxJpDpGqDac@eUkNmBbDlB{Eh@lCnEuLH,}kGk~lAcAtBpDdB`YoFv@cD{QyBkKpH,i|O_fjBi@yM|Lz@{@{DoKlBlCoQ`RaH?bFrL_DaAmZcC~ImKaE|EmIfGeArAlDmCog@_GjFeOq@aI~DxA_HyVsJaFnEdF|G{D}DuIdGf@iIpGJ}@sNwk@oFnF}Ala@nEbGqBdZrExJ|HgAdElFJcJ?r@~DvRoJCpCCwEcVmRsp@sAua@sYqR{@wRcGjIfJyEzS~JdMfYaBeWvCu@rOl`@xC_`@_ClHrMeHiGwGbD_UY{GvD`M|PzEeDzElGfIeEoG[~AeDpJxEvCfUtRc@eJjApA`FxZ[kQnDfUrGcITpCdBuFbJ~LxDsClCzF|AwPhAyAhE~@fC~G_EhHjF,icVw{iBbAxClUt@tZ_HeEwBpDmCiLsBuUjHkBmEgKjJ,clSgfjBiC~A`Ft@pLoHiOxC,agWknjB{F|CvYvAwIcDfAoCkI|@,upR_kjBiB|D~Dh@fTkKiIm@sLpE,meTgojB}CgF~MpYxDmE{N{K,}q\\ytjBzCxGfQuB`EcByC_LkW~I,sySopjBjc@m@oCiBnHqBb@hCzQsV_f@_FeLhD|ArDqGcBe@qFcF|FvJvA_HDoGjHnIbM,osWowkBuBlDlFdBwBsG,}rSsblB\\gGyFjFlDnFl@sE,ooVyejBcGlB`L~GVxFzMgVwIqAtO{EeLpAxEuCqDi@pDyBp[LxI{H{FyAhGyEaC}BnLwD{HNhLeD{RtA}HoB}HoHzMqD}]r@~HvJeG[bDbCuFlCuHcPiFhKzGxCkHJbA}P`JM}\\eJkQdDxEfFqDtLfXzLuOhKb[tFcIzBv@|EvNA}GjE,sfPoymBnIbC|GwBqGwHoOiDrDtM,kwTg~nB`FbGzI}B}PeC,{tk@us|AiOmHcS|F}Ra@e[tDmR}AeUrMmJaAkJwH}w@{DcGuLcW}BiRvEuPr\\{_@fa@yL~E{KdVWrMdIxXiD|VrEjAwO|OmNtCsK`@UsDwGrAoWiIqTfGpEv]bVt@|JnEr@oBgIuB|D{BeCoE~FsAbFhCyCbJbIfFcFgCsDrAjM~A?bImIwHbQ`RiA|RzD~N,cyv@yltA|GJjLu@zKgCbAe@xAeFn@y@nBFhCx@`CTbCuCl@KrBZ|J@rAkApBe@h@c@Ik@b@SlHk@pCaAp@VjFNbG`BxA?|Dl@|Q~@~HpAdAXhAz@p@dAnF~B`ChC|BhAp@~@pAXhCBjBx@vBb@rDB~Bb@tAGvEeBrI[jF}@dLT|AI~MsBvErAlKLlUaCpBq@tETtAIvEwA~HKtDRjEx@fLZ|@KjAcAo@cEUm@g@QcD[eA[a@{@P}@xF{@jLqE,gik@gkuARyCdEm@bAi@vAmB?}@p@i@Di@[u@qBOc@uA[SqAG}Ct@sASm@}@`C_B|CKbAWlEuCrBSxA`AvCn@nFbIXRxABnAe@Ty@|@c@dBsDtGmAbEh@fB?`BUfAs@n@gBb@WjJW`@u@fA]Yq@mA]mDAkB_@Ee@l@s@vEo@l@W@a@|@EBOWe@uB[k@sABg@gBs@@s@bAy@hBs@lIy@`Aa@dCsB|A^v@c@dDu@hIcG`B_@J[iAm@C]zAuCm@gBQ}Dh@[jA|@lAMrA{APkA~@e@`AsAbA_@nBQhBcAtC{@~AyC|BkB,epf@w`yAoAgAaIEq@u@_Db@eBr@_COeAc@U_AeAGJyAwB}@qAEeA`@_AOmBZiAGcAh@cCyAyAOi@cA[cCa@[{BKm@WfAyBEg@uAcBSqB]Y_DQoA_B_BUc@e@Ee@dAg@aA{BcA{@{AYMyBuBcAk@cBjA{@yB{AkCgA_@gAoA_AGsAkAcDqBiB}B_@g@w@XeEe@o@wDkB{B]{AoDaCcBgAUmDAw@}A{@GyEz@uC]cCyA_BUW}AoCu@sAyA,epf@w`yAlB_Ab@K~@RnAe@|BVrA_@~BItGdApFwAlFPzBz@Up@r@Rd@h@`Bb@r@r@nCLf@Tn@dAdFEj@Q\\g@l@Kl@L\\d@@z@tA?n@VKt@lDM,i|c@uuxApCp@l@Ox@|@jEu@b@BdDtDtAr@r@Lj@MzC`Bf@A`@]`BTtEkAbD?`BXpEg@hD?~@f@f@w@x@[nH}@T}AlBwA|Cc@hDEh@X`@e@vALLy@TXhAY?Ku@MpA[t@gCnAiAxDK|B{@p@u@hB}@jDaDZeBhAmARNtBk@ZZ~DcD`Ce@^V|B}@,eg_@kyyAZuAlCuBjBq@N[uAq@Je@|AW@a@ZBx@y@^aAu@}Bl@Gz@i@pGNpAM,{l^}ozAyCoBiBk@Qq@w@W[s@aFBw@XkCSb@e@tAKgCq@AU~@ON[oBoBXWbBRXKO}@x@SOoB{Ag@K[`BgCW[BkAm@]q@f@uEcAgBu@FoAoAa@Ww@jAy@Ie@r@gAj@M`AF`Cc@v@FrCk@}@y@_@NsBo@c@iAiAUsFn@oAvAeCTiBkA]r@kAHwIs@n@m@RkC]U^q@fA]?U_Ce@e@qAXQk@o@R[{BeA,wn`@iw|AiA]qHh@kGzEmB`@{ArA}@GqCxAaCn@gD\\}PWuFN_Fm@yK_@wG\\uCwA_BUdCkAKaDVe@eBk@wA}A{Hs@mEIwFRkCu@mGBkBq@@m@aAkCyEm@i@BuAv@kCEa@ZLt@QP{AO{Bv@i@Jo@KgCkAwEeA{@wAgADsBu@uAd@gBw@{AkBeB}DyBcB?}Ay@OaQeAyAl@{AHmBj@sDFqCr@}E{@sA^wByAmEYsCr@m@dAkCLi@hBaCfCcB|@}@LsImAiHEmBy@,ifj@ip}AuGBiD~HwF?wFbHgKJyC~G,w_k@_z~AjMjWtI~EJhI,wn`@iw|AzC}@I_@^Oi@kA`AaAnAWp@c@v@_FhAc@d@q@Gm@rBu@i@wDaByBaAi@B_C,axc@ku_BeEJy@TP`@SlDyA@yBc@kA\\gAE}@O_@oAg@EH_@{@{A}@[uCOcEmCe@B_BdAgBxEkAVoA@NlA}CZ}BIi@fDR^y@j@pBfBFXYVmCNsCiA_AC_FfBg@S_@wBcBcCo@D}Aw@yCIcAiBgBRgBA?a@_@EsE~@yBy@iD?oDhCmCRkC|@yAc@iBwAoBIOQV]fAe@gAe@oBI_Br@i@EeC_BmIlAyI_@sBn@aA?cChBqAs@i@CwEzAaChBe@dCy@ZmCNwA`@sA?c@~@uFZeB`AeFReAT,ozZg{gB{@aBqQlHoA{NvAlAtHyDnEpD|FyB,cwZcjhBiK^yyAoS}RYmWkQ}n@_K}q@qDod@fHeDlDjXeJ}HvTsQfDgl@uEidEhE,{zl@ejhBoXdp@w@pXb`@pMbMxLm\\xKzDt]uHxJ|BdEw^`[pJ~AkHtO|FnGtQhAfx@jj@xF`HqA~UqJlHlS{B,|cMypjBvAj@~BJbBhAFhBfAd@RhCnDjC?dBtEElDjAbA@tCq@fDbAm@R?r@uAVc@b@}@OyBp@uASEf@pANfElBjAPdFUjCnBjEp@c@l@gEpCkBNeBpBmCZo@vCsCTyC?oC|@o@x@uE\\{Bk@q@@TPk@BQXiDLl@cAiA_@@lAa@?_@]@g@e@K\\[W_@_Eu@La@[UdAc@I[`AQBUs@YLc@_A?aA]_ByA{@a@}@A_EnA_@n@s@Lm@`Bp@^wA^[x@gAx@uAd@cB[mBz@Ib@|@dAQl@^n@sAr@]Hi@]}@DiDe@w@?a@XoBOm@_Bw@XsAM]L,zfKcthB}H`EpN]d@dEoGfBY~KqHjEjFzDiGzDvHf@qFxBmEpSfVhe@bGg@uFpAYpGzZu@sA_BnInG`CgIf@lHlc@hASzEfOTtIvH`Mh@uBsDzL@_FzFhOvBs@|DbMcA{BfCpYZlEvCxHXyByBbDbApAuBpVbFcPiIzQzBiWmGhE{CdCxC``@jE}IiH_XcHta@pGdE{ErE|BlBaE{Go@V}Cw^gIli@lBn@eDaQuEmCzAqAiCaFnCaLSdGq@eAkEfFiAuR{BX_Eaw@mEbLi@c@aDlTnJM_BzQu@dUxEiZgKaHgJvFM{K}KmKx@lBqA_KXqAuClH?mEqA|CYr]|AtA}BpBlBuBiHzNdD|Dk@mE_ErVLiIiCnIqCe]uAdL_B?gFkTcAKiC~V[w@uC_GjA|EyEaCmDpG`AnAuGrErFCuGiFiCoDfEaHgBh@cDk_@bA}FzHsD}Gw`@`DzE_BmHi@`BcB`H_AiKgFaOu@qDaH~SbDkAwCzNj@xFqCiT_CpC_AsFp@jHmBeCcAiIf@dGuIqG}@sA}FsFhAeJcEqFdDqBiF_ExHOwExDW_HkBkFxHlGzHyKcEfCsMuOJ|FkEwZdHdRrI,vmRckhBKpCfRiEcQmAWdC,|cMypjBkJp@kEmHa\\gBe[fCyBhKoQxJpLtJwSsCyGtLbDtFrA{I~GcCwCpGdDpDaG_AAvEtPxAdJdKhM{B,peDaycBjRjBbLhIbUA|Q}L~ZbCuLoFfNAbB_F~b@~JdJaDePgAi@cDlDzC~Ox@dCyAwGyA^yCpJOaNcIiMTy_@qKaVySbJmBqGcG`I{CmCeFpSbAxEnElN?qc@yYuTmC|AaBgP`B_P}BcNhFbE{H_GsA_JdHkJ_C`MB`J_LuKaJjHeANoGmK{B{BqP|GzDzEeC~DzH~D_BcAmHfElClSaSkNcV{UyDha@e@T|EtMCdKjFlWuGi@dMx\\sJ~DxB_EvIrQkNZcG{HdEImMkWeU|QiLeAeLgXOhUqHXxD_EuL~DzDhCmB~A~PtHcGiAxEzDgCf@rGrEy@|@qGaYqPt_@rN{FhNvIrGdAzPbOxAkEoUcMwIxK`BqDaNpG|D_J}GpAcNyF_ArD?aDaDoNK_HkFnGlEzNOiL}DvIf@_EgFcSmBbNAkFiEra@`SzSaH_\\iBre@`@nCeBy\\oBzDwA}JwAhOi@qDmEiRMxNoCoV{@pPgBmEyEuIhAbAqD~Ph@qPwFnUdC|@_MkSjAhQkEgGeCpGuF_FgAyDdEL}HmWbD~G_EmQzEnVuNcHZuB{CjHaFs[jA|MeG{@yB}Ft@rDkFkFsFoHl@c@~CqAcDiFdBhEvE{PkFf@fFc\\aHqh@KTwCgUhA|E|Onu@`ZbDw@uC~D|VoA_UrDiOkA`L~HrDcAzS|FeXkD~M~Jos@cMkVjBy_AcAqIrDkCtGxLtHzKfXpSfShLpFdd@nEkZwDcD`FcMdC|KjDfJ[tVdJz]}CiJ~Dcc@|B}NaFwJBa^|GcSrPqJ~AuY|z@ag@hHaKhMkQnG|GpD{Tb[lWcIb\\bA}ZKc^|PsGbPtTfOmVjFqJqKak@nAaVpHmElHhI~`@rNxGzIqDaFpCrKDiLJbDhCwC`AdLjChDiCpPvFmMo@JvHt`@lGkRo@jFdD_XxAm\\cA~BlMxRnDlDbHrLYt]nJx`@gDn_@hEhHaF~GzBbD}B[|BtRqGiHjFfN`Dz\\i@sCrG`ZwAlBjFvX{Kl^hF~D{Bl@bPzInJpW}CdH}HpDzB_EtCf^i@fRlKdBgBrGxMvPuIjMzCg@{EcVwDuQwPuIn@vCuCaGKmLgJeB_NwJb@cG}Ch@gFw[oBum@nB}A_Kac@{WtOhI,tbAq`bBfKbGbQuCsNcFwMtB,}w@glcB?~A`J_BaJ?,b_G{bgBhRdJfIkOkNu@sFrFqEW,|{HilkBxDrCjJ_B|AgI_EwCcMjL,zwJazkB`OlHiAmKzN~DuBoIcFqAg@nCuIuF{EfL,jiJarlBoEcAxS|T~AoFyJwB`EaAqJoE,diLslmBsDNvMjCcH{C,nbJefmBpFfFla@\\eT{CjJBsJwF`S_BeHyDm^bL,bmMcjnBdIpBwEsEmB`B,hjKemnBcD`BdEfC`F{BcGmB,vcM{}nBjEbJcGbApGZtC_QoJzB,~dMugoBuB~B|J]gGaB,p|LiroB{@zAhFu@sD|BrJd@sHpAdWcDqM_EmJfA,fyKe_oBvLyEgCsByEjC`AeIqS~GpEmJqEqByH`F?vPu^pA^fBnTpJcI_IlKsAxAlEtCsCrHnAfImH{H@|KoE`AfC,tqL_xoBrIyD{PeEbPkBcJ{BtFXlB}GcD}BwFv@}AzEPcD_I?zE_E_c@cMwCfIlKzE{Kf@~MLu@hCjNlBgLi@mBfC`Kh@sDpAbDnBvFO~AuCiFmB~D?u@dJzFe@yAfChLlD,~iEoyqBgF[lIt@zDyGoKbClBzB,niDudrB~DpDxH{CzLvAp@uFxBpD~BaAEeFqO{@uDfCtFzB_TNZ~BeCyA,z}CanrB~G~@g@cCwFbA,xzDonrB`E{BiHLfBlB,zoDyrrBiCmBu@nE~DaB,zwCyxrBlNhEaDiEkI?,p}DozrBgDqAmGxEtLgC,`p@mkuBlC~AdD{BsHZ,pcA__uB}BeArGlEcDtC`GdA}DnDlHnQhEmBwE_TxBpAbDmBvAlEtMaGkSAoEiCrJqGdIPcDsC}GxA~Du@eJoEhC`NoH_EDpDwFM,t|@spuBhAdKtELnAkHgC|@UoFqEhA,iwk@ovoAkKl@sAEuAa@SgA[S_Ce@kAx@qD}@cEBcCr@aA@wB_AcDBm@w@uCUuAo@mBr@]?gAs@cAXa@WH}B{@SiCPo@\\s@eAmB_@eAl@Aj@QD}GYg@k@eBWi@Zc@|B_Ap@@d@_@T_BBJRyBPuCxBg@@Q{AeDOcKdCk@E]^wBt@{BhB}ABmIqAgBA{AeAqDHoAZiAa@{AI_Bk@mChAmAWmA@{Bu@eE_@kA_Ca@Sz@{Aa@w@HgAt@U^_C~Ac@V[@iBkBs@cDMk@]k@FoA|@uBB,ylr@anpAkOhEiAzNlR~EkApPhPhMv@}Df_@mAhUqCtAeC~SxHxIKvFmEtWrMvOmBdGxAT~BmLlGvD~@yAxDkGv@Q}B}VpQzDn@dGeHnMsD|KJZnEePnG?hIfImBnHaLxMyBbEdBo@zC_WvLdW}@zBcPtXmHbCgFaIeBpCwDtS`JcDdErDtRio@ru@fQbDiIcDbDiFlK_CzEvGwIlHbAxByEu@pPzHrIgA`EnBi_@|E}BxEqK]y@hHoMDsE`HkP`CcGxFvDtAcEbTjBhGn\\aS[sCfc@hIuJpCXdKoI|Cp@cDmDi@FtFeGvClOjAzDhE~DmBuB{DjXiFgW`p@zCfG_InL~LmDpJaPhE_@xEr@xD~IMnLnGqFaAcKrNeL]oEbLv@u@jKlDfC~IuDpGsQqEoPpb@c]wL}G_BoKoNbCeMsJ}r@bPuJ|FwEmAfEkCsQ{@cB_D`YgC~HeIdD~D`I}Hf@zE`Kf@lMqDnZfFdKoK[fEhJvDnIoU~FwGlDtAvAaBwCsBdAuDaOr@sBhCwDW`@sFtCaCt@jBxHgCnBnAl@yC|ChDqD`C`EZxNySxHi@pD}Dw@{EbGi@_B{DjJkC,alr@e~cAtAlLdGbEbIiAj{@tEnP?GaHhTcF|k@eAhIgC{BsPsG|Bo@{IuCnH{UeB?pC|E\\gJd@oDdGyV}Cyl@hGoRsAhBpHcDfCsOkFkFr@{GwE,wct@akdAvChFdCkKoHeM~BdKmB`F,g}k@g|eAwDlC`FfEbDiCgAmJeC`D,_dv@adfAjHrVhUvGo@qIpCsCoLkJgTyD,kqp@_gfAaEnBZbDlE]uCcAlBqD,iot@mdfAe@tBdFyD_EbA,snr@{pfAoElBfHtCpB_D}GCrA_B,{lu@{mfAt@zBdD_BcDiCw@lB,sxn@uwfAuBi@IlDdLz@u@mEqClBb@{BaCZ,qjp@_vfAcAuCkEdDfArBfEcC,aht@wagAuCxA`ZxHEwBeU{G,kxq@ucgAiCzA|RtFsNqI,_go@uigA{BjDlBxAhCaH{BZ,_qs@cdgAj@_HsHzDfGbB,_kp@qjgA`JfAoGuGqAlE,kzp@wsgAmBbJdGfEvEiIoJaF,wvn@urgAyCq@UrCxEJi@mB,_rn@gahAwCuCcA~DzE`D?kE,erp@sahAnDJqA_EeFjAfCfB,}uo@ubhAxBlCYcH_BtC,izl@gjhAaBbArD?qAcA,e_p@}khArE_EcPpDtApBxFcB,snr@krhAdGdF|NlBcEsF_Q_B,s~l@{whApDbD|@wCoFK,oys@}thAtNbDpDiCzEhAb@_CcMsCkOpAf@|A,iyg@_yhA}DxDjEcA|C`DfKgLsDyB_KhG,_yo@owhAbAbDnOoPiDcA}IzDkArG,_vl@u_iAsDgChCi@_HdAhIjB,{ng@{iiA~LaB`CiIf@hE~CMmBkJcGt@OqGyDnLeBo@gFlH~BhC,wmg@o~iA_BhCvC[bAiI{BzE,gbr@}gjA?~MxJpGxE_D{FcE|GwMuRhA,i~p@gljAv@xCjA{BcC],qeg@sljAnA~AyGoP{@|LdGP,ieo@sxjAzE|AReDpF_AeAeE{KlI,w_o@}oiAh@tIdK^nIkFbIoRpWGdAoHvX_PxUo@{[wJmQ~Ocb@hF_EpYwDhCgN?,wwl@smkAcAgCeAlBhCX,kfm@{kkAdDsD{KfDtFJ,awm@irkAlEtCuF}Gf@fC,g~r@qgkApCz@bB}D_AlGdUuAzCyB_KaFnLpEzLqGaS_EAmBkK?sNrS,wff@s_lA[hCdMoDxNmQqA{AqPFlEpGeDv@QnHuHlA,sup@gemAhEnNbEeGfAfFnIeAZyHwNrAiIeD,udq@__nAvF~AtFcDgGaAeFdC,clo@}pnAJtFrGpAxFgCyFiI_HhC,{yt@ixeA_Bp@|DD}Aw@,m}r@u}gArAfDh@kE}Bb@,asg@qojA@jC|BqB_CY,{l^}ozArFrA@zCUn@aAp@Cl@z@i@nG_ArFh@xD]PhA`DPdAvA~AXtC}@lJL|GUrBXhAhA`Ai@fA\\~AHxBzD|CZz@bArDp@~@bBb@HjAmAdBF|@SZ]~NAfEwAfCBpFaA|CL`DW,iwYozyAbKu@x@a@pECzGZhDaA`DYtMWrDaA`AHhA]bBEpCF|Ag@|Dc@dAi@t@kBrCo@MqBPk@nCWl@e@xAS]e@|@aCUc@wBm@k@e@?u@l@I`CNhEhAlCBvARxCdAzAHrA`@dBi@nDOnCVfBe@xBhA`Ea@vGl@bDfBlA`EnBzAbCIxBRfA_@lADnA[~@HJQ_Ao@RUvDcAlFh@rAE~@c@,klS_pzAGqC|CuBnAVp@f@b@pAxB?bAnBtA\\|AH`Ce@lAq@tEm@p@YXYQuB\\ICUxJqAnDA,yuQa|zAw@o@Ms@bA_Bz@WU}@l@}@M[r@g@,arQ}h{AcCaC[aAaBaB?sA`Cy@z@{@No@,{uLiuxAgCvA_CFiGgAuCH_AOuB{@eBUiAu@kEb@}BnAs@G_BV_CAKi@g@?[cA}Di@e@_@u@_DsASwAs@i@_ABiApBsB[c@g@[kDm@aByAoA_@]c@Ra@y@y@eDc@y@Dc@hAl@nG]pAoCt@wDhDuCt@}A[m@^{BFq@n@bCdD_AFmC~@qA~BVpBoAQ{BZ_Au@y@eBTa@pAUz@iAeAy@Z{AqBm@YqBe@e@oCcAc@_AwAu@cBgEZkDl@g@q@_Be@WaBIg@FAXaAd@cB_AQtFmAb@g@fAaAj@sGLcAg@A{@UQ_BVmDw@}BG{A\\[rBkBjAUnAuCUw@WYe@jB}AXy@aBaCNUtDe@^Yc@i@^a@IaBkA}@a@oAoEm@sAPAtAqAPe@\\iHXk@oAL{Ah@WrAEt@aAq@y@KeAy@g@VuAw@o@QqA,iwYozyAn@fCxCPjClB~DbAtAfBr@VyAbDu@EZc@yAJsAPaBz@{CFOb@x@hA|EtBl@h@Od@v@f@}AlAaEc@a@d@jBhEDdA]h@}C`@aBt@kCj@}CzDiA`@|A|A|AFnA]`BD,_xYq`xA_Ei@rM_JvIdF`AkCrNu@bAbGhh@vK{HeFhRpDvFvIcE|DwBcA{BvL?mBiI~DpDhHjAkCQnDjHo@wFvd@{QnMwx@|Yu[`{@sf@nY_ArDoYxH}{@NiB`GhQ~IcAnGeeAxWeYvNe`@dJy^~^pIhTdPcF`LkV|Tc@tQkE{EwD`Pi@rGrCdRpUu@jFzG|JoBbFie@|NbAtRaDzBjEbGpIoAxTxG^~U`X|PrEbLzQNzFgDBeLgJaDwDyIfC}IwRcDiC{Fjd@ikAjLfDhHeAjGyGnLoCmDwHnL_PlZdEeG}HfJyEjN`BjS{[bJxAbOqD`NfClHuIdO_BvWaQtLaO`KqApIiNpP_GzO^eByIjLeJhLyBaAcFnOk@w@eRdLkN`CcUbHsIhOwDXdCpd@oRf@`B`[}FnQ~FzWlXjb@pE,ygWgvtA}@Ec@k@[mARu@xB^p@d@Rl@[j@y@T,_mVg}fA}@|DrEmCuCo@,qi]}xiAmFfAdZr^pFvPWdHgHnChCdBiHdKzInD~BxO|d@sG~KuNdb@}Fz`@wRlMcDvPFnMoMcC_MgLsDu@cDqIhI_ImBoAuEqL}@qCjF_X`GkMuCu]HuW_HiJvBiHqGmBrByM_E,wb\\scjAsBsA?|BrBi@,ooOcikAzA~E~BoG{En@,cfOqpkAhAxDlAqCwCg@,edOaeoA`CxBgFcGdBhC,_cRyenAOhEzI`KsEdJjIly@|AvAp^}HcClAjBjMxIhFnGmBvChCvOkUmCm`@sFnBzBi@eBeG~HwBb@qFaFkCzEyUnD{F`HB{AeViF`FeLn@{QoFoXwR}JbDi@pDiFcA~AzEmHX|HvCwLbDbCxAkGdN,ukSytrAt@nGhR_B_ToD,arQ}h{AbAhBBbAu@fCdAvAgDVg@I,iiGqicB~QmDbG`CvVuHgXaC{NhIcJClQ{GuL?zDaB_C}AtRcGoLw@zB_H{Fc@{UsSyMof@aG~BwKcBc_@yTiWmE_t@yA{UzK,ipE}icBou@L,i{Fk}cBgBrA`Gf@|OiEwTlA,ypHmvfBjIvE}FqJmAxC,_rIkjgBaIo@`YjD_O{B,gcKiogB}FLzK~A}CmB,gik@gkuAtAZtAlAPnBOnAV\\tBLz@hAjCJbAh@HpBzA~FoAbBD`Ae@jAyBjA_@bBFnAqAhDyCxAsADu@x@kAD{@VoChBk@~AqBbB_Ad@aCXGn@x@dCh@j@`A^b@`AlBtAhBZ`BxDxB\\tC]t@Dr@^~@C|CnBs@bB{@z@pAfBMZn@|DgE`CObBn@hBlAXzAbC|CX,qvf@usrAQ_C`@_@zGwBzCS`EkCvB_A|@eAj@@dAl@dC?vAe@|AqBdBL`Ca@jDaClAgBhEuDfJmC^s@@y@g@m@,und@y_tAk@?gAoB_B@{Ai@aAl@}@xAi@{@cBRSO\\g@?w@{@{@@u@vAoDlE_DfDuDzAq@WOEgAuAU{CnAgIG_Cy@s@{@f@u@d@TrBaAzAsARs@l@R`D_Bf@mBdAw@pBDxDm@~AkCMoAq@u@TmDcBg@OkAgCkCk@mAoA{@{AwGYOFc@f@c@l@?f@YvEF\\g@jE`BhCX,ocd@csvAp@aBu@UaBf@aC}AXm@h@JTMOwAX_ChAgB]S{C@G_@f@cAk@GqA~@qAJsAGe@[a@XmDC[UEm@Tg@d@MnDKfGoAjBm@h@oAhBKhBs@@g@}AUO[bAoAYuAeCLy@g@T[jBe@l@k@rBv@b@?jAcAO{AoBcBH[zAo@`@sBlBeBSqAgBUbAu@cAi@J],ocd@csvAzFHnCu@dAs@Rw@_A_A^_AdBSvBmCx@n@~@eAdCD\\HKdAn@AdBc@jBkArDUfDcAfAXPdAlAT~BSlBeA~@KvDfCtC`@lAc@nBeBnB}@lBLrBhArDJ[w@~ANSW\\_@PXfBP`FcBn@dArBJdGeBf@{@v@Z?w@PXjAg@MZh@@l@aBxDfCLv@VNr@BlKsArBA|Aj@zAdC|A^~A|Ep@HlE{@tDaClBsCtA[F{@xGEjBJ`Ah@Vz@GtBv@tBObC`A`BEp@mApBFb@jAR\\ZWbA{CnCcBMg@i@Y@_@bA_A@UTi@lAuBZa@fAlA~Ai@^qBS_AZwApE?\\j@l@aA@_A`@\\zCw@rCwBdBeBtCoAn@}ABs@rAyBh@cJnHcAhC}E`C}K|HkBdAsBn@_ET_A\\]r@b@fDk@bBmAtAmCvAsA~BaHjCqAdA}@jBGt@v@^jBN,yia@{zrAvj@_\\r]qEuAmAt\\zAPqJfNsC`b@_ZFmDsH|@bAcDwOxBr_@sQtFsH|@cV|RuLzL}@`I|UbDt@x@qDnAbMzEg@YxBnPyQmE{BbGS|DcUqDR,kpYazwAcAr@mG?yBz@iCP{DeBj@c@Ui@sAJ}CbAiBCqCi@wEj@{AE_E_B{@kCqByBq@UUHUtBeClAB|@aFpA_@v@sAJuAUk@wAe@AgDbAaB@eDbByAFcEq@uACgAy@bBo@Za@v@}Cw@o@yC[tAyAr@Xj@O~@w@G]aBm@yFy@WM@y@UGcAHmAa@kELcBk@`@}Aa@gABgCo@uAZ]fBg@rAuA[iBgAqAi@MqDFgCyAcCEaCq@kC]qAaAB{A_BFkAi@_Bp@gDEE[v@c@^oDy@m@_D}@ONKO_BNcAf@qA?cA`@,i_c@}brA?bCc@v@kAl@Er@,_cc@_zqAtd@mVvIeAw@jBtm@oPem@hLnDgB,ina@uwrAs@q@m@GiDd@q@Q[h@AfA}@fA{AVuD`CiM~EoDt@u@C{AfAgBN,s|_@_qrAeCtAnEHiA_B,una@mnrAsD~ApY_E}S~A,wm`@s|rAyBnBjTXtLcDg^X,av^_csAbJlB{@cCgHT,ir_@mfsA`SiC}JaAkf@jEf^?,if_@gpsAtC{Ec\\bDlWv@,m{\\{ztArAyAqJtF|G{C,qq\\{ytAcBxCpT}QmQbM,y`\\_`vA|G}GeR~IeAtAhIgCiR|MxEWrMuM,{e[k`vAoDbDtIqDt@_H{ElH,gx[smvAjBiCgI~GzEuC,cj[kfvAjDHjGwNiF}A`EoL}HpKqAhR,ew[}wvArQ_HwFcIuNfNxCzB,kz^g~sAaCb@fI?eEc@,kpYazwAh@cBoJ[pAoA,cyv@yltAb@|PlDlDlHyBtKfAlLzJVt]|HGdDxHhKzCYfByNXiAxHiOxPxKk@rOzD`P}JbMPvElDxSx@~C|G~JbA@xC,yoM}ltAlCf@,i_c@}brAk@UaAHHq@eBw@Wi@RoBpCsCj@_B@a@y@y@lAsCe@oB{@k@oBQgEFb@mEo@qBuAwAn@Q_@_@}FiCu@KXa@{CUo@HcAh@Cl@aAfAaA_AyASvBkErAiAj@FIg@X]~@WI_@cCmAm@CkAhAa@FqAKu@m@oCD,iyd@wvpAdKkDvPsTtEX~KsFN{AqGzAXsD|JdC,ina@uwrAnCeB,jnMqsgAjXbKnn@yFbYlEkNkk@|G{LqFsMh@wIfHsF_TzB`GaAhAaF\\fDjF}@hSxD}AiGhCaFaHJiIiFhCqGmNqJtIpB`JlStVJmH}a@fCwE}J}@_GyI{Lca@eDJtFcDuHoZgJeF|DPYcE~D~JmEg^lJm_@mGcBdHr@hAkCaGuK,fm[at`CtYdEmAxDdMbDmExBiUg@kEnCdMlOe_@}AmBxE~PvIsRgI{f@lHxBnGhIZsEhAhPxAmZh@b\\xBmX?nFlBoFpAuEgC`CfIhKd@vN{DlK~Ae_@|D`TLuOnBbJpA}FhA~YfEdNmE_NlHtLMlAjEsJcBdKjKzKn@cJcA~G[nLlIpQEnNcGwCvFbd@bGfq@jTjG_ChAzCBgGhArF~`@RtIbDKuCvNpEsIHvI~A}EXtElDjMbBwCyBjK]iGhDfa@dCv}@oHb[HxUoIgBeBwJz@fEmElIrF~JwBgIJ~C}DfGbDzT}DuFkC|JMdGlEvqAjATcPoJtEy\\oC{FqCbGcAkTcAbMsA{I}EqRe@xJmAh\\nD_NwCpJ[kCeE_PsE{KnApJ}AuIcA~_@fDzFtEjP{K{NsChL~BJeHrNnB`w@iBlPzDbMiIqh@wCgGpA{D{D{BjEiW{HsG~DeAoC}k@`@wByIvOxDj_@mCqt@uOpPXrGqDvG|DhGsBoPqEfVpDdC{FzErElEkEu@~FxLwE~@tBjKq@~ApD`Ju@r]xEnDiCra@cAyMcG_^lEnPgFoPpAbP_EVeEa\\dEcCvDiPaCzNwAyTuBt`@NrGkEcCcB}c@dDtd@oI{BcCoVpDlQaGePd@zK}AwGuBaZ|D|@zGcGcD{EpGoG_HeAzLeG{GiDbGeBwNhd@oGce@qAjTi@kEuCd`@tAcF_CzEqAiOPvCuA{N~AqO{AkLhKe\\bDcDfImFwC[nCwK`@fP~AaRp@|IlIaHv@lN~AlKwCoI|FgKHhCrCcImAvHtHqOPsF~OPmPoJjEDcOeNyDmKlKlBcDoFg@m@fCkFoGrGsYwRoAgLbMoY~Ic@cTwVET}DcNkAae@|SsH|LpMm`@_Wv@uU~MxBcDkK`AuOgO}LzEiImAaIfBpDgCuHaAxD`AkKh@hFsUo_@{@iD`FmMv@ObI}RfDaB}EkXwFqU?,gl[cbeAf@pDnEm@jEiHcMdD,azZwmeAyCrAhHAoCqA';
+  var RINGS = 'AD:~4j ~9;AL:~4c 4d 4e 4f 4g;AT:~5g ~5c 7r 7s 7t 7u 7v ~q ~o;BA:98 ~8j ~8h ~96 ~8o;BE:44 45 46 47 ~t ~43 ~0;BG:~6f ~4a ~8f ~56 94;CH:~7w ~3 ~r ~7v 88 ~7t;CZ:m n o p;DE:q r ~2 s t u v w x y ~p|z 10|11|12|13|14;DK:4s ~w|4t|4u|4v|4w|4x|4y|4z|50|51|52|53|54;EE:15 16|17|18|19|1a;ES:~a 4j ~8 4k 4l 4m|~c|4n|4o|4p|4q|4r;FI:3s ~3f ~1f|3t|3u|3v|3w|3x|3y|3z|40|41|42;FR:0 1 2 3 4 5 6 7 8 9 a b|c|d|e|f|g;GB:5o ~5l|5p|5q|5r|5s|5t|5u|5v|5w|5x|5y|5z|60|61|62|63|64|65|66|67|68|69|6a|6b|6c|6d|6e;GR:~4b 6f 6g ~4d|6h|6i|6j|6k|6l|6m|6n|6o|6p|6q|6r|6s|6t|6u|6v|6w|6x|6y|6z|70|71|72|73|74|75|76|77|78|79|7a|7b|7c|7d|7e|7f|7g|7h|7i|7j|7k|7l|7m|7n|7o|7p|7q;HR:~5a ~8i 8j 8k 8l|8m 8n 8o|8p|8q|8r|8s|8t|8u|8v|8w|8x|8y|8z|90|91|92;HU:~58 59 5a 5b 5c 5d 5e;IE:5l 5m|5n;IS:9a;IT:7w ~7s 7x 7y ~4|7z|80|81|82|83|84|85|86|87;LI:~7u ~88;LT:h i j k|l;LU:~s ~1 43;LV:1b ~k 1c ~16;MC:95 ~6;ME:~8m 96 ~8g ~4h ~4f 97;MK:48 49 4a 4b 4c;MT:9b|9c;NL:~u ~47 89|8a ~45|8b|8c|8d|8e;NO:1d 1e 1f|1g|1h|1i|1j|1k|1l|1m|1n|1o|1p|1q|1r|1s|1t|1u|1v|1w|1x|1y|1z|20|21|22|23|24|25|26|27|28|29|2a|2b|2c|2d|2e|2f|2g|2h|2i|2j|2k|2l|2m|2n|2o|2p|2q|2r|2s|2t|2u|2v|2w|2x|2y|2z|30|31|32|33|34|35|36|37|38|39|3a|3b|3c|3d|3e;PL:~m ~y 5i ~z 5j ~i 5k ~5h;PT:99 ~4l;RO:55 56 57 58;RS:~57 8f ~49 ~4i 8g 8h 8i ~59;SE:3f 3g ~1d|3h|3i|3j|3k|3l|3m|3n|3o|3p|3q|3r;SI:93 ~7x ~7r ~5b ~8l;SK:5f ~5d 5g ~n 5h;SM:~7z;XK:4h 4i ~48 ~4g';
+  loadAll();
+})();
+</script>
+</body>
+</html>
