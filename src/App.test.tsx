@@ -204,6 +204,13 @@ describe('the menu', () => {
       '50',
       '75',
       '100',
+      // Grouping nearby places, in km.
+      'Off',
+      '10',
+      '25',
+      '50',
+      '75',
+      '100',
       'Share this view',
       'Clear filters',
       'Export CSV',
@@ -347,6 +354,20 @@ describe('the map', () => {
     expect(await screen.findByTestId('map')).toBeTruthy()
     expect(screen.getByRole('table')).toBeTruthy()
     expect(localStorage.getItem('movacar-board.map')).toBe('50')
+
+    // Grouping nearby places: 25 km unless changed.
+    menu = await openMenu()
+    expect(
+      within(menu).getByRole('menuitemradio', {
+        name: 'Group places within 25 km',
+      }),
+    ).toHaveProperty('ariaChecked', 'true')
+    await userEvent.click(
+      within(menu).getByRole('menuitemradio', {
+        name: 'Group places within 50 km',
+      }),
+    )
+    expect(localStorage.getItem('movacar-board.group')).toBe('50')
 
     // All of the screen: no table.
     menu = await openMenu()

@@ -21,7 +21,12 @@ import {
   rowMark,
   type Selection,
 } from './map/routes.ts'
-import { MAP_SIZE_KEY, toMapSize } from './map/settings.ts'
+import {
+  GROUP_KM_KEY,
+  MAP_SIZE_KEY,
+  toGroupKm,
+  toMapSize,
+} from './map/settings.ts'
 import { ColumnsDialog } from './table/ColumnsDialog.tsx'
 import { exportCsv } from './table/exportCsv.ts'
 import { OffersTable } from './table/OffersTable.tsx'
@@ -91,6 +96,8 @@ export default function App() {
   const [wrap, setWrap] = useStoredState('movacar-board.wrap', false)
   const [storedMapSize, setMapSize] = useStoredState<unknown>(MAP_SIZE_KEY, 0)
   const mapSize = toMapSize(storedMapSize)
+  const [storedGroupKm, setGroupKm] = useStoredState<unknown>(GROUP_KM_KEY, 25)
+  const groupKm = toGroupKm(storedGroupKm)
   const [picked, setPicked] = useState<Selection>(NOTHING_PICKED)
   const dark = useDarkMode()
   const [columnsOpen, setColumnsOpen] = useState(false)
@@ -118,9 +125,9 @@ export default function App() {
   const filteredRows = table.getFilteredRowModel().rows
   const map = useMemo(() => {
     const offers = filteredRows.map((row) => row.original)
-    const { cities, routes } = buildRoutes(offers)
-    return { offers, cities, cityList: [...cities.values()], routes }
-  }, [filteredRows])
+    const { cities, routes, groupOf } = buildRoutes(offers, groupKm)
+    return { offers, cities, cityList: [...cities.values()], routes, groupOf }
+  }, [filteredRows, groupKm])
 
   // What's picked on the map or in the table, while it's still in the list.
   const pickedCity =
@@ -146,9 +153,9 @@ export default function App() {
   const mark = useMemo(
     () =>
       pickedCity || pickedRoute
-        ? (offer: Offer) => rowMark(offer, pickedCity, pickedRoute)
+        ? (offer: Offer) => rowMark(offer, pickedCity, pickedRoute, map.groupOf)
         : undefined,
-    [pickedCity, pickedRoute],
+    [pickedCity, pickedRoute, map],
   )
   // Tapping a city picks it, or lets go of it; tapping the map lets go of all.
   const pickCity = useCallback(
@@ -224,6 +231,8 @@ export default function App() {
               // Turning the map off lets go of what was picked on it.
               if (size === 0) clearPicked()
             }}
+            groupKm={groupKm}
+            onGroupKmChange={setGroupKm}
             onShare={share}
             onClearFilters={clearFilters}
             canClearFilters={filtering}

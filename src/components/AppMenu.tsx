@@ -1,5 +1,6 @@
 import {
   Check,
+  CircleDot,
   Columns3,
   Download,
   ExternalLink,
@@ -15,7 +16,14 @@ import {
 import { DropdownMenu } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { REFRESH_URL, REPO_URL } from '../links.ts'
-import { MAP_SIZES, mapSizeName, type MapSize } from '../map/settings.ts'
+import {
+  GROUP_SIZES,
+  groupName,
+  MAP_SIZES,
+  mapSizeName,
+  type GroupKm,
+  type MapSize,
+} from '../map/settings.ts'
 
 const panel =
   'z-30 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-900 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'
@@ -57,6 +65,52 @@ function LinkItem({
   )
 }
 
+/** A setting as one row of small buttons, which fits a phone. */
+function ChoiceRow({
+  icon: Icon,
+  label,
+  unit,
+  values,
+  value,
+  onChange,
+  nameOf,
+}: {
+  icon: LucideIcon
+  label: string
+  unit: string
+  values: readonly number[]
+  value: number
+  onChange: (value: number) => void
+  /** For screen readers: what a button means. */
+  nameOf: (value: number) => string
+}) {
+  return (
+    <>
+      <DropdownMenu.Label className="flex items-center gap-2.5 px-2.5 pt-2 pb-1.5 text-sm">
+        <Icon aria-hidden className="size-4 shrink-0 text-zinc-500" />
+        <span className="flex-1">{label}</span>
+        <span className="text-xs text-zinc-500">{unit}</span>
+      </DropdownMenu.Label>
+      <DropdownMenu.RadioGroup
+        value={String(value)}
+        onValueChange={(choice) => onChange(Number(choice))}
+        className="flex gap-1 px-2 pb-1.5"
+      >
+        {values.map((choice) => (
+          <DropdownMenu.RadioItem
+            key={choice}
+            value={String(choice)}
+            aria-label={nameOf(choice)}
+            className="flex-1 cursor-pointer rounded-md border border-zinc-200 py-1.5 text-center text-xs outline-none select-none data-[highlighted]:bg-zinc-100 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-50 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 dark:border-zinc-700 dark:data-[highlighted]:bg-zinc-800 dark:data-[state=checked]:border-blue-400 dark:data-[state=checked]:bg-blue-950 dark:data-[state=checked]:text-blue-200"
+          >
+            {choice === 0 ? 'Off' : choice}
+          </DropdownMenu.RadioItem>
+        ))}
+      </DropdownMenu.RadioGroup>
+    </>
+  )
+}
+
 /** The ☰ menu: actions that would clutter the screen, especially on a phone. */
 export function AppMenu({
   onColumns,
@@ -64,6 +118,8 @@ export function AppMenu({
   onWrapChange,
   mapSize,
   onMapSizeChange,
+  groupKm,
+  onGroupKmChange,
   onShare,
   onClearFilters,
   canClearFilters,
@@ -75,6 +131,8 @@ export function AppMenu({
   onWrapChange: (wrap: boolean) => void
   mapSize: MapSize
   onMapSizeChange: (size: MapSize) => void
+  groupKm: GroupKm
+  onGroupKmChange: (km: GroupKm) => void
   onShare: () => void
   onClearFilters: () => void
   canClearFilters: boolean
@@ -108,29 +166,24 @@ export function AppMenu({
               <Check aria-hidden className="size-4 text-blue-700" />
             </DropdownMenu.ItemIndicator>
           </DropdownMenu.CheckboxItem>
-          {/* Off, or how much of the screen the map takes: one row of
-              buttons, which fits a phone better than a submenu. */}
-          <DropdownMenu.Label className="flex items-center gap-2.5 px-2.5 pt-2 pb-1.5 text-sm">
-            <MapIcon aria-hidden className="size-4 shrink-0 text-zinc-500" />
-            <span className="flex-1">Map</span>
-            <span className="text-xs text-zinc-500">% of the screen</span>
-          </DropdownMenu.Label>
-          <DropdownMenu.RadioGroup
-            value={String(mapSize)}
-            onValueChange={(value) => onMapSizeChange(Number(value) as MapSize)}
-            className="flex gap-1 px-2 pb-1.5"
-          >
-            {MAP_SIZES.map((size) => (
-              <DropdownMenu.RadioItem
-                key={size}
-                value={String(size)}
-                aria-label={mapSizeName(size)}
-                className="flex-1 cursor-pointer rounded-md border border-zinc-200 py-1.5 text-center text-xs outline-none select-none data-[highlighted]:bg-zinc-100 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-50 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 dark:border-zinc-700 dark:data-[highlighted]:bg-zinc-800 dark:data-[state=checked]:border-blue-400 dark:data-[state=checked]:bg-blue-950 dark:data-[state=checked]:text-blue-200"
-              >
-                {size === 0 ? 'Off' : size}
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
+          <ChoiceRow
+            icon={MapIcon}
+            label="Map"
+            unit="% of the screen"
+            values={MAP_SIZES}
+            value={mapSize}
+            onChange={(size) => onMapSizeChange(size as MapSize)}
+            nameOf={(size) => mapSizeName(size as MapSize)}
+          />
+          <ChoiceRow
+            icon={CircleDot}
+            label="Group places on the map"
+            unit="km"
+            values={GROUP_SIZES}
+            value={groupKm}
+            onChange={(km) => onGroupKmChange(km as GroupKm)}
+            nameOf={(km) => groupName(km as GroupKm)}
+          />
           <DropdownMenu.Separator className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />
           <DropdownMenu.Item className={item} onSelect={onShare}>
             <Label icon={Share2}>Share this view</Label>
