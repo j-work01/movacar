@@ -1,12 +1,27 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { AppMenu } from './components/AppMenu.tsx'
 import { FilterChips } from './components/FilterChips.tsx'
 import { RefreshNotes } from './components/RefreshNotes.tsx'
 import { loadOffers, loadStatus } from './data/load.ts'
 import type { Offer, OffersFile, RefreshStatus } from './data/types.ts'
 import { useStoredState } from './lib/storage.ts'
+import { useDarkMode } from './lib/useDarkMode.ts'
 import { describeWhen } from './lib/when.ts'
 import { REFRESH_URL } from './links.ts'
+import { MapPanel } from './map/MapPanel.tsx'
+import {
+  buildRoutes,
+  NOTHING_PICKED,
+  rowMark,
+  type Selection,
+} from './map/routes.ts'
+import { MAP_SIZE_KEY, toMapSize } from './map/settings.ts'
 import { ColumnsDialog } from './table/ColumnsDialog.tsx'
 import { exportCsv } from './table/exportCsv.ts'
 import { OffersTable } from './table/OffersTable.tsx'
@@ -74,6 +89,10 @@ export default function App() {
   // The view starts from the web address, so bookmarks and shared links work.
   const [initialView] = useState(() => viewFromUrl(window.location.search))
   const [wrap, setWrap] = useStoredState('movacar-board.wrap', false)
+  const [storedMapSize, setMapSize] = useStoredState<unknown>(MAP_SIZE_KEY, 0)
+  const mapSize = toMapSize(storedMapSize)
+  const [picked, setPicked] = useState<Selection>(NOTHING_PICKED)
+  const dark = useDarkMode()
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [toast, setToast] = useToast()
 
@@ -94,6 +113,54 @@ export default function App() {
   const shown = table.getRowModel().rows.length
   const filtering = columnFilters.length > 0
   const clearFilters = () => setColumnFilters([])
+
+  // The map shows the same offers as the table: the filtered ones.
+  const filteredRows = table.getFilteredRowModel().rows
+  const map = useMemo(() => {
+    const offers = filteredRows.map((row) => row.original)
+    const { cities, routes } = buildRoutes(offers)
+    return { offers, cities, cityList: [...cities.values()], routes }
+  }, [filteredRows])
+
+  // What's picked on the map or in the table, while it's still in the list.
+  const pickedCity =
+    mapSize > 0 && picked.city && map.cities.has(picked.city)
+      ? picked.city
+      : null
+  const pickedOffer =
+    mapSize > 0 &&
+    picked.offer &&
+    map.offers.some((offer) => offer.id === picked.offer)
+      ? picked.offer
+      : null
+  const shownPick = useMemo(
+    () => ({ city: pickedCity, offer: pickedOffer }),
+    [pickedCity, pickedOffer],
+  )
+  const mark = useMemo(
+    () =>
+      pickedCity ? (offer: Offer) => rowMark(offer, pickedCity) : undefined,
+    [pickedCity],
+  )
+  // Tapping a city picks it, or lets go of it; tapping the map lets go of all.
+  const pickCity = useCallback(
+    (key: string | null) =>
+      setPicked((current) =>
+        key === null
+          ? NOTHING_PICKED
+          : { ...current, city: current.city === key ? null : key },
+      ),
+    [],
+  )
+  const pickOffer = useCallback(
+    (offer: Offer) =>
+      setPicked((current) => ({
+        ...current,
+        offer: current.offer === offer.id ? null : offer.id,
+      })),
+    [],
+  )
+  const clearPicked = useCallback(() => setPicked(NOTHING_PICKED), [])
 
   const share = async () => {
     const url = window.location.href
@@ -133,6 +200,12 @@ export default function App() {
             onColumns={() => setColumnsOpen(true)}
             wrap={wrap}
             onWrapChange={setWrap}
+            mapSize={mapSize}
+            onMapSizeChange={(size) => {
+              setMapSize(size)
+              // Turning the map off lets go of what was picked on it.
+              if (size === 0) clearPicked()
+            }}
             onShare={share}
             onClearFilters={clearFilters}
             canClearFilters={filtering}
@@ -160,7 +233,7 @@ export default function App() {
       </header>
 
       {/* The table scrolls inside itself; messages scroll here. */}
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {data.kind === 'error' && (
           <Message>
             <p role="alert">{data.message}</p>
@@ -177,19 +250,41 @@ export default function App() {
             </p>
           </Message>
         )}
-        {file && (
-          <OffersTable
-            table={table}
-            wrap={wrap}
-            emptyMessage={
-              <>
-                No offers match.{' '}
-                <button type="button" className={link} onClick={clearFilters}>
-                  Clear filters
-                </button>
-              </>
-            }
-          />
+        {file && mapSize > 0 && (
+          <section
+            aria-label="Map"
+            className="relative min-h-0 shrink-0 border-b border-zinc-200 dark:border-zinc-800"
+            style={{ flexBasis: `${mapSize}%` }}
+          >
+            <MapPanel
+              cities={map.cityList}
+              routes={map.routes}
+              picked={shownPick}
+              onPickCity={pickCity}
+              onClear={clearPicked}
+              dark={dark}
+            />
+          </section>
+        )}
+        {file && mapSize < 100 && (
+          <div className="min-h-0 flex-1">
+            <OffersTable
+              table={table}
+              wrap={wrap}
+              emptyMessage={
+                <>
+                  No offers match.{' '}
+                  <button type="button" className={link} onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                </>
+              }
+              mark={mark}
+              markKey={pickedCity}
+              chosenId={pickedOffer}
+              onRowClick={mapSize > 0 ? pickOffer : undefined}
+            />
+          </div>
         )}
       </main>
 

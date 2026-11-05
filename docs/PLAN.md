@@ -107,10 +107,25 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
   Refresh data (opens GitHub).
 - **Data age:** "Data from 4 November (today) at 21:24 (12 min ago)", or
   "Data from 2 November (2 days ago) at 21:24".
-- **During a refresh:** "Refresh started 3 minutes and 53 seconds ago. Refreshing…",
-  counting live. The status is read from GitHub's public API.
+- **During a refresh:** a live "Refresh started … ago. Refreshing…" message is
+  on hold (see Steps).
 - **Errors:** if the last refresh failed, a note says so and shows how old the data is.
 - **Phone:** the same table, swiped sideways, with no fixed column for now.
+- **Map (☰ → Map):** off by default. When on, it sits above the table and takes
+  20–100% of the screen (100% hides the table); each device remembers the size.
+  Its code only loads when it's turned on.
+  - It shows what the table shows: the same filters, one line per route (city to
+    city), thicker with more offers.
+  - Direction: arrowheads along each line, and every line bends to its right, so
+    A → B and B → A lie side by side.
+  - Tap a city: its routes light up (blue leaving, orange arriving) and the rest
+    fades. In the table, its offers light up in the same colours and come first.
+  - Tap a row: its route lights up on the map (black, or white in dark mode), and
+    the map moves to show it.
+  - Background: OpenFreeMap's calm grey map, or its dark one in dark mode. Free,
+    no account. If it can't be reached, the routes show on a plain background.
+  - It first shows where most offers are, without the few farthest ones (like
+    Tenerife), whose lines then run off the edge.
 - **Look:** plain and calm, standard fonts, follows the device's light/dark mode.
   Built with Tailwind CSS and shadcn/ui.
 
@@ -125,7 +140,7 @@ also from GitHub's own website). The history and data came along.
 1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
    examples, the refresh script and its checks, and tests built from saved real
    answers. The page shows the age of the data.
-2. **The table**, in three parts:
+2. ✅ **The table**, in parts:
    - ✅ **2a:** the columns, sorting by one column, show/hide columns (remembered
      per device), the ☰ menu and Export CSV. Each row links to the offer's own
      page on movacar.com.
@@ -134,8 +149,15 @@ also from GitHub's own website). The history and data came along.
      Days column, and the new default columns.
    - ✅ **Refinements:** no search box, the column order and groups, "C" for the
      countries, the Days layout, shaded rows and narrower headers.
-   - **2c:** "Refresh started … ago. Refreshing…" while a refresh runs.
-3. **Phone polish.**
+3. ✅ **The map:** routes on a map, linked with the table both ways.
+
+On hold (explained, not wanted for now):
+
+- **Live refresh message:** "Refresh started … ago. Refreshing…" while a refresh
+  runs, read from GitHub's public API.
+- **Phone polish:** tap a row for all its details, a shorter header, a home-screen
+  icon, filters that slide up from the bottom, an optional fixed From column.
+- **Tap a line on the map** to list its offers.
 
 ## Not planned
 
@@ -144,8 +166,6 @@ also from GitHub's own website). The history and data came along.
 
 ## Maybe later
 
-- A map showing the relocations. The data keeps station coordinates, so this stays
-  possible.
 - A refresh button on the website for everyone. It needs a small helper that keeps
   a secret key (for example a free Cloudflare account), because a public website
   can't keep secrets.

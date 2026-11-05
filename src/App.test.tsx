@@ -3,7 +3,37 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 import type { OffersFile, RefreshStatus } from './data/types.ts'
+import type { City, Selection } from './map/routes.ts'
 import { makeOffer, station } from './test/offers.ts'
+
+// The real map needs WebGL, which tests don't have. This stand-in has a
+// button per city, and shows what's picked.
+vi.mock('./map/RoutesMap.tsx', () => ({
+  default: ({
+    cities,
+    picked,
+    onPickCity,
+  }: {
+    cities: City[]
+    picked: Selection
+    onPickCity: (key: string | null) => void
+  }) => (
+    <div data-testid="map" data-picked-offer={picked.offer ?? ''}>
+      {cities.map((city) => (
+        <button
+          key={city.key}
+          type="button"
+          onClick={() => onPickCity(city.key)}
+        >
+          {`Pick ${city.name}`}
+        </button>
+      ))}
+      <button type="button" onClick={() => onPickCity(null)}>
+        Tap the map
+      </button>
+    </div>
+  ),
+}))
 
 const OFFERS: OffersFile = {
   fetchedAt: '2026-11-04T20:23:00Z',
@@ -11,6 +41,31 @@ const OFFERS: OffersFile = {
     makeOffer('1', { from: station('Madrid', 'ES') }),
     makeOffer('2', { from: station('Mannheim', 'DE') }),
     makeOffer('3', { from: station('München', 'DE') }),
+  ],
+}
+
+/** Offers with places, so they show on the map. */
+const placed = (name: string, country: string, lng: number, lat: number) => ({
+  ...station(name, country),
+  reference: name,
+  longitude: lng,
+  latitude: lat,
+})
+const MAP_OFFERS: OffersFile = {
+  fetchedAt: '2026-11-04T20:23:00Z',
+  offers: [
+    makeOffer('1', {
+      from: placed('Madrid', 'ES', -3.7, 40.4),
+      to: placed('Lisbon', 'PT', -9.14, 38.72),
+    }),
+    makeOffer('2', {
+      from: placed('München', 'DE', 11.58, 48.14),
+      to: placed('Madrid', 'ES', -3.7, 40.4),
+    }),
+    makeOffer('3', {
+      from: placed('Mannheim', 'DE', 8.47, 49.49),
+      to: placed('München', 'DE', 11.58, 48.14),
+    }),
   ],
 }
 
@@ -129,6 +184,13 @@ describe('the menu', () => {
     ).toEqual([
       'Columns…',
       'Wrap text',
+      // The map's size: one row of buttons.
+      'Off',
+      '20',
+      '40',
+      '60',
+      '80',
+      '100',
       'Share this view',
       'Clear filters',
       'Export CSV',
@@ -242,5 +304,105 @@ describe('filters', () => {
     )
     expect(rows()).toBe(2)
     expect(window.location.search).toBe('?fromCountry=DE')
+  })
+})
+
+describe('the map', () => {
+  const tableRows = () => screen.getAllByRole('row').slice(1)
+  const fromColumn = () =>
+    tableRows().map((row) => within(row).getAllByRole('cell')[0].textContent)
+  const marks = () => tableRows().map((row) => row.getAttribute('data-mark'))
+
+  it('is off by default; ☰ → Map sets its size, remembered on this device', async () => {
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    expect(screen.queryByRole('region', { name: 'Map' })).toBeNull()
+
+    let menu = await openMenu()
+    expect(
+      within(menu).getByRole('menuitemradio', { name: 'Map off' }),
+    ).toHaveProperty('ariaChecked', 'true')
+    await userEvent.click(
+      within(menu).getByRole('menuitemradio', {
+        name: 'Map 60% of the screen',
+      }),
+    )
+    expect(screen.getByRole('region', { name: 'Map' }).style.flexBasis).toBe(
+      '60%',
+    )
+    expect(await screen.findByTestId('map')).toBeTruthy()
+    expect(screen.getByRole('table')).toBeTruthy()
+    expect(localStorage.getItem('movacar-board.map')).toBe('60')
+
+    // All of the screen: no table.
+    menu = await openMenu()
+    await userEvent.click(
+      within(menu).getByRole('menuitemradio', {
+        name: 'Map 100% of the screen, no table',
+      }),
+    )
+    expect(screen.queryByRole('table')).toBeNull()
+  })
+
+  it('ignores a remembered size that makes no sense', async () => {
+    localStorage.setItem('movacar-board.map', '"huge"')
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    expect(screen.queryByRole('region', { name: 'Map' })).toBeNull()
+  })
+
+  it('lights up the offers of a tapped city in the table, leaving first', async () => {
+    localStorage.setItem('movacar-board.map', '40')
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    expect(fromColumn()).toEqual(['Madrid', 'München', 'Mannheim'])
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Pick München' }),
+    )
+    expect(fromColumn()).toEqual(['München', 'Mannheim', 'Madrid'])
+    expect(marks()).toEqual(['leaving', 'arriving', null])
+    const clear = screen.getByRole('button', {
+      name: 'Clear the map selection',
+    })
+    expect(clear.parentElement?.textContent).toBe(
+      'München 1 leaving 1 arriving',
+    )
+
+    // Tapping the map itself lets go.
+    await userEvent.click(screen.getByRole('button', { name: 'Tap the map' }))
+    expect(marks()).toEqual([null, null, null])
+    expect(fromColumn()).toEqual(['Madrid', 'München', 'Mannheim'])
+  })
+
+  it('lights up the route of a tapped row on the map', async () => {
+    localStorage.setItem('movacar-board.map', '40')
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    const map = await screen.findByTestId('map')
+
+    const row = tableRows()[0]
+    await userEvent.click(within(row).getAllByRole('cell')[0])
+    expect(row.getAttribute('data-chosen')).toBe('true')
+    expect(map.getAttribute('data-picked-offer')).toBe('1')
+    expect(screen.getByText('Madrid → Lisbon')).toBeTruthy()
+
+    // Tap it again to let go.
+    await userEvent.click(within(row).getAllByRole('cell')[0])
+    expect(row.getAttribute('data-chosen')).toBeNull()
+    expect(map.getAttribute('data-picked-offer')).toBe('')
+  })
+
+  it("doesn't pick rows while the map is off", async () => {
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    const row = tableRows()[0]
+    await userEvent.click(within(row).getAllByRole('cell')[0])
+    expect(row.getAttribute('data-chosen')).toBeNull()
   })
 })
