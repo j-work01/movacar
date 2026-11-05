@@ -294,6 +294,14 @@ describe('filters', () => {
     render(<App />)
     await dataLine()
     expect(screen.getByText('2 of 3 offers')).toBeTruthy()
+    // One line: the count and the filter chips share a row.
+    expect(
+      screen
+        .getByText('2 of 3 offers')
+        .parentElement?.contains(
+          screen.getByRole('list', { name: 'Active filters' }),
+        ),
+    ).toBe(true)
 
     const cells = screen
       .getAllByRole('row')
