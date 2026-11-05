@@ -124,6 +124,8 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
     the map moves to show it.
   - Tap a line: it turns black, and its offers light up in yellow at the top
     of the table. Tap it again to let go.
+  - Group places (☰): places within 10, 25 (the default), 50, 75 or 100 km of a
+    busier place show as one dot, e.g. "Malmö + 1 nearby", or Off.
   - Background: OpenFreeMap's calm grey map, or its dark one in dark mode. Free,
     no account. If it can't be reached, the routes show on a plain background.
   - It first shows where most offers are, without the few farthest ones (like

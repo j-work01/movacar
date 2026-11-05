@@ -74,6 +74,35 @@ describe('routes', () => {
   })
 })
 
+describe('grouping nearby places', () => {
+  const MALMO = at('Malmö', 13.0, 55.6)
+  const STAFFANSTORP = at('Staffanstorp', 13.21, 55.64) // about 14 km away
+  const offers = [
+    makeOffer('1', { from: MALMO, to: MUNICH }),
+    makeOffer('2', { from: MALMO, to: MUNICH }),
+    makeOffer('3', { from: STAFFANSTORP, to: MUNICH }),
+  ]
+
+  it('merges places within the distance into the busiest one', () => {
+    const { cities, routes, groupOf } = buildRoutes(offers, 25)
+    expect(routes.map((r) => [r.key, r.offers.length])).toEqual([
+      ['Malmö>München', 3],
+    ])
+    expect(cities.get('Malmö')).toMatchObject({
+      name: 'Malmö + 1 nearby',
+      leaving: 3,
+    })
+    expect(groupOf(STAFFANSTORP)).toBe('Malmö')
+    expect(rowMark(offers[2], 'Malmö', null, groupOf)).toBe('leaving')
+    expect(rowMark(offers[2], null, 'Malmö>München', groupOf)).toBe('route')
+  })
+
+  it('keeps them apart when off, or farther away', () => {
+    expect(buildRoutes(offers, 0).routes).toHaveLength(2)
+    expect(buildRoutes(offers, 10).routes).toHaveLength(2)
+  })
+})
+
 describe('curves', () => {
   it('survive the flat map and back', () => {
     const [x, y] = toMercator(11.58, 48.14)

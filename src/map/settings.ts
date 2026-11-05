@@ -17,3 +17,17 @@ export const mapSizeName = (size: MapSize) =>
     : size === 100
       ? 'Map 100% of the screen, no table'
       : `Map ${size}% of the screen`
+
+/** Places this close (in km) show as one on the map. 0 is off. */
+export const GROUP_SIZES = [0, 10, 25, 50, 75, 100] as const
+export type GroupKm = (typeof GROUP_SIZES)[number]
+
+export const GROUP_KM_KEY = 'movacar-board.group'
+
+/** A remembered distance, or 25 km when it's missing or makes no sense. */
+export const toGroupKm = (value: unknown): GroupKm =>
+  GROUP_SIZES.find((km) => km === value) ?? 25
+
+/** For screen readers: the buttons only say "Off", "10", … "100". */
+export const groupName = (km: GroupKm) =>
+  km === 0 ? 'Group places: off' : `Group places within ${km} km`

@@ -27,52 +27,110 @@ export interface Route {
 export const cityKey = (station: Station) =>
   station.reference ?? station.id ?? station.name
 
-export const routeKey = (offer: Offer) =>
-  `${cityKey(offer.from)}>${cityKey(offer.to)}`
-
 const hasPlace = (station: Station) =>
   station.latitude !== null && station.longitude !== null
+
+/** Straight-line distance in km. */
+export function distanceKm(
+  a: { lng: number; lat: number },
+  b: { lng: number; lat: number },
+): number {
+  const rad = Math.PI / 180
+  const dLat = (b.lat - a.lat) * rad
+  const dLng = (b.lng - a.lng) * rad
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.sqrt(h))
+}
 
 /**
  * Groups offers into cities and routes. Offers without coordinates are left
  * out, and so are routes within one city, which would be lines of no length.
+ *
+ * With `groupKm`, places that close to a busier place join it: the busiest
+ * place takes in the places within that distance, and gives the group its
+ * name ("Malmö + 1 nearby") and position.
  */
-export function buildRoutes(offers: readonly Offer[]): {
+export function buildRoutes(
+  offers: readonly Offer[],
+  groupKm = 0,
+): {
   cities: Map<string, City>
   routes: Route[]
+  /** The city (or group) a station belongs to. */
+  groupOf: (station: Station) => string
 } {
+  const placed = offers.filter((o) => hasPlace(o.from) && hasPlace(o.to))
+
+  // Places: one per reference, in the middle of its stations.
   const places = new Map<
     string,
-    { names: Map<string, number>; points: Map<string, [number, number]> }
-  >()
-  const cities = new Map<string, City>()
-  const routes = new Map<string, Route>()
-
-  const city = (station: Station) => {
-    const key = cityKey(station)
-    let place = places.get(key)
-    if (!place) {
-      place = { names: new Map(), points: new Map() }
-      places.set(key, place)
-      cities.set(key, {
-        key,
-        name: '',
-        lng: 0,
-        lat: 0,
-        leaving: 0,
-        arriving: 0,
-      })
+    {
+      names: Map<string, number>
+      points: Map<string, [number, number]>
+      offers: number
     }
-    place.names.set(station.name, (place.names.get(station.name) ?? 0) + 1)
-    const point: [number, number] = [station.longitude!, station.latitude!]
-    place.points.set(station.id ?? point.join(), point)
-    return cities.get(key)!
+  >()
+  for (const offer of placed) {
+    for (const station of [offer.from, offer.to]) {
+      const key = cityKey(station)
+      let place = places.get(key)
+      if (!place) {
+        place = { names: new Map(), points: new Map(), offers: 0 }
+        places.set(key, place)
+      }
+      place.offers++
+      place.names.set(station.name, (place.names.get(station.name) ?? 0) + 1)
+      const point: [number, number] = [station.longitude!, station.latitude!]
+      place.points.set(station.id ?? point.join(), point)
+    }
   }
+  const byBusiest = [...places]
+    .map(([key, place]) => {
+      const points = [...place.points.values()]
+      return {
+        key,
+        offers: place.offers,
+        name: [...place.names].sort((a, b) => b[1] - a[1])[0][0],
+        lng: points.reduce((sum, p) => sum + p[0], 0) / points.length,
+        lat: points.reduce((sum, p) => sum + p[1], 0) / points.length,
+      }
+    })
+    .sort((a, b) => b.offers - a.offers)
 
-  for (const offer of offers) {
-    if (!hasPlace(offer.from) || !hasPlace(offer.to)) continue
-    const from = city(offer.from)
-    const to = city(offer.to)
+  // Groups: the busiest place left takes in the places close to it.
+  const groupOfPlace = new Map<string, string>()
+  const cities = new Map<string, City>()
+  for (const place of byBusiest) {
+    if (groupOfPlace.has(place.key)) continue
+    const members = byBusiest.filter(
+      (other) =>
+        !groupOfPlace.has(other.key) &&
+        (other === place ||
+          (groupKm > 0 && distanceKm(place, other) <= groupKm)),
+    )
+    for (const member of members) groupOfPlace.set(member.key, place.key)
+    cities.set(place.key, {
+      key: place.key,
+      name:
+        members.length > 1
+          ? `${place.name} + ${members.length - 1} nearby`
+          : place.name,
+      lng: place.lng,
+      lat: place.lat,
+      leaving: 0,
+      arriving: 0,
+    })
+  }
+  const groupOf = (station: Station) =>
+    groupOfPlace.get(cityKey(station)) ?? cityKey(station)
+
+  // Routes: between groups.
+  const routes = new Map<string, Route>()
+  for (const offer of placed) {
+    const from = cities.get(groupOf(offer.from))!
+    const to = cities.get(groupOf(offer.to))!
     from.leaving++
     to.arriving++
     if (from === to) continue
@@ -81,16 +139,7 @@ export function buildRoutes(offers: readonly Offer[]): {
     if (route) route.offers.push(offer)
     else routes.set(key, { key, from, to, offers: [offer] })
   }
-
-  // Each city sits in the middle of its stations, named as most of them are.
-  for (const [key, place] of places) {
-    const c = cities.get(key)!
-    const points = [...place.points.values()]
-    c.lng = points.reduce((sum, p) => sum + p[0], 0) / points.length
-    c.lat = points.reduce((sum, p) => sum + p[1], 0) / points.length
-    c.name = [...place.names].sort((a, b) => b[1] - a[1])[0][0]
-  }
-  return { cities, routes: [...routes.values()] }
+  return { cities, routes: [...routes.values()], groupOf }
 }
 
 /** Web Mercator, the flat map: 0..1 across, with y growing southwards. */
@@ -220,11 +269,14 @@ export function rowMark(
   offer: Offer,
   city: string | null,
   route: string | null = null,
+  groupOf: (station: Station) => string = cityKey,
 ): RowMark {
-  if (route && routeKey(offer) === route) return 'route'
+  const from = groupOf(offer.from)
+  const to = groupOf(offer.to)
+  if (route && `${from}>${to}` === route) return 'route'
   if (!city) return null
-  if (cityKey(offer.from) === city) return 'leaving'
-  if (cityKey(offer.to) === city) return 'arriving'
+  if (from === city) return 'leaving'
+  if (to === city) return 'arriving'
   return null
 }
 
