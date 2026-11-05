@@ -19,15 +19,15 @@ describe('offersToCsv', () => {
   it('has every column, shown or hidden, plus the link', () => {
     const [header, row] = offersToCsv([makeOffer('261802')]).split('\r\n')
     expect(header).toBe(
-      'From,From country,To,To country,Vehicle,Category,Company,Seats,Sleeps,' +
-        'Doors,Min. driver age,Min. licence (years),Earliest pick-up,' +
-        'Latest pick-up,Return by,Days,Days incl.,Extra days,Free km,€/extra km,' +
-        'Route km,Price,From address,To address,Link',
+      'From,From country,To,To country,Vehicle,Category,From address,' +
+        'To address,Company,Earliest pick-up,Latest pick-up,Return by,Days,' +
+        'Days incl.,Extra days,Free km,€/extra km,Route km,Price,Sleeps,Seats,' +
+        'Doors,Min. driver age,Min. licence (years),Link',
     )
     expect(row).toBe(
       'München,Germany,Málaga,Spain,ROAD HOUSE Westfalia Eliseo C540 - Fiat Ducato 8,' +
-        'ROAD HOUSE,roadsurfer,4,4,5,18,1,2026-11-21,2026-11-27,2026-11-28,' +
-        '6,5,1,2600,0.5,2332,129,München,Málaga,' +
+        'ROAD HOUSE,München,Málaga,roadsurfer,2026-11-21,2026-11-27,2026-11-28,' +
+        '6,5,1,2600,0.5,2332,129,4,4,5,18,1,' +
         'https://movacar.com/en-US/checkout/261802?origin=1&destination=2',
     )
   })

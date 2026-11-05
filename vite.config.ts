@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config'
 // https://vite.dev/config/
 export default defineConfig({
   // Relative asset paths, so the site works under any sub-path
-  // (GitHub Pages serves it from /movacar-board/).
+  // (GitHub Pages serves it from /movacar/).
   base: './',
   plugins: [react(), tailwindcss()],
   test: {

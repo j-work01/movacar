@@ -13,26 +13,14 @@ interface Chip {
 /** The active filters as chips: "Price: up to €1 ×", plus "Clear all". */
 export function FilterChips({
   columnFilters,
-  search,
   onRemoveFilter,
-  onClearSearch,
   onClearAll,
 }: {
   columnFilters: ColumnFiltersState
-  search: string
   onRemoveFilter: (columnId: string) => void
-  onClearSearch: () => void
   onClearAll: () => void
 }) {
   const chips: Chip[] = []
-  if (search.trim()) {
-    chips.push({
-      key: 'search',
-      label: 'Search',
-      text: `“${search.trim()}”`,
-      remove: onClearSearch,
-    })
-  }
   for (const filter of columnFilters) {
     const column = COLUMN_BY_ID.get(filter.id)
     if (!column) continue

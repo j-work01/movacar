@@ -1,9 +1,37 @@
 import type { Station } from '../data/types.ts'
-import { companyFromLogo, countryName } from '../lib/format.ts'
+import { companyFromLogo, countryName, formatNumber } from '../lib/format.ts'
 
 /** A city name. (The table shows the full name and address on hover.) */
 export function Place({ station }: { station: Station }) {
   return <>{station.name || '—'}</>
+}
+
+/**
+ * "20 (15+5)": the total in a slot of its own, right-aligned so totals line
+ * up from row to row, and the sum next to it in grey.
+ */
+export function DaysCell({
+  total,
+  included,
+  extra,
+}: {
+  total: number | undefined
+  included: number | undefined
+  extra: number | undefined
+}) {
+  if (total === undefined || included === undefined) return <>—</>
+  return (
+    <span className="inline-grid grid-cols-[3ch_auto] tabular-nums">
+      <span className="text-right">{formatNumber(total)}</span>
+      {extra ? (
+        // The space is real text (kept by whitespace-pre), so copying the
+        // cell or reading it aloud gives "20 (15+5)".
+        <span className="whitespace-pre text-zinc-500 dark:text-zinc-400">
+          {` (${formatNumber(included)}+${formatNumber(extra)})`}
+        </span>
+      ) : null}
+    </span>
+  )
 }
 
 /** "DE", with "Germany" on hover. */
@@ -27,7 +55,8 @@ export function CompanyLogo({ url }: { url: string | null }) {
       src={url}
       alt={name ?? ''}
       title={name}
-      className="h-4 max-w-24 object-contain"
+      // Logos are made for white backgrounds, so dark mode puts one behind them.
+      className="h-4 max-w-24 object-contain dark:rounded-sm dark:bg-white dark:px-0.5"
       loading="lazy"
     />
   )

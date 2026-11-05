@@ -252,7 +252,9 @@ export function ColumnFilter({ column }: { column: OffersColumn }) {
       <Popover.Trigger
         aria-label={`Filter ${config.label}`}
         className={cn(
-          'shrink-0 rounded p-0.5 focus-visible:outline-2 focus-visible:outline-blue-600',
+          // A small icon, so it hardly widens the column, with a bigger
+          // invisible area around it (24 × 28 px) that's easy to tap.
+          "relative shrink-0 rounded after:absolute after:-inset-x-1.5 after:-inset-y-2 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600",
           active
             ? 'text-blue-700 dark:text-blue-400'
             : 'text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100',
@@ -260,7 +262,7 @@ export function ColumnFilter({ column }: { column: OffersColumn }) {
       >
         <Funnel
           aria-hidden
-          className={cn('size-3.5', active && 'fill-current')}
+          className={cn('size-3', active && 'fill-current')}
         />
       </Popover.Trigger>
       <Popover.Portal>

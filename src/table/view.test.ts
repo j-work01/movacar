@@ -7,10 +7,9 @@ describe('the view in the web address', () => {
     expect(viewFromUrl('')).toEqual(DEFAULT_VIEW)
   })
 
-  it('holds sorting, search and filters, and reads them back', () => {
+  it('holds sorting and filters, and reads them back', () => {
     const view: ViewState = {
       sorting: [{ id: 'price', desc: true }],
-      search: 'camper',
       columnFilters: [
         { id: 'fromCountry', value: ['NL', 'BE'] },
         { id: 'sleeps', value: [2, undefined] },
@@ -21,7 +20,7 @@ describe('the view in the web address', () => {
     }
     const query = viewToUrl(view)
     expect(query).toBe(
-      '?q=camper&fromCountry=NL&fromCountry=BE&sleeps=2..&price=..1' +
+      '?fromCountry=NL&fromCountry=BE&sleeps=2..&price=..1' +
         '&startDate=2026-11-07..2026-11-08&vehicle=crafter&sort=-price',
     )
     expect(viewFromUrl(query)).toEqual(view)
@@ -40,7 +39,8 @@ describe('the view in the web address', () => {
   it('ignores what it does not know or cannot read', () => {
     expect(
       viewFromUrl(
-        '?sort=nonsense&colour=red&price=cheap&sleeps=2..&utm_source=x',
+        // q= was the search box, which is gone.
+        '?sort=nonsense&colour=red&price=cheap&sleeps=2..&utm_source=x&q=van',
       ),
     ).toEqual({
       ...DEFAULT_VIEW,
