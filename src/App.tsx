@@ -12,7 +12,7 @@ import { loadOffers, loadStatus } from './data/load.ts'
 import type { Offer, OffersFile, RefreshStatus } from './data/types.ts'
 import { useStoredState } from './lib/storage.ts'
 import { useDarkMode } from './lib/useDarkMode.ts'
-import { describeWhen } from './lib/when.ts'
+import { describeWhen, describeWhenShort } from './lib/when.ts'
 import { REFRESH_URL } from './links.ts'
 import { MapPanel } from './map/MapPanel.tsx'
 import {
@@ -211,15 +211,30 @@ export default function App() {
         <div className="flex items-start gap-3 px-4 py-2">
           <div className="min-w-0 flex-1">
             <h1 className="font-semibold tracking-tight">Movacar board</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {/* One line: how many offers, how old the data is, the active
+                filters. It scrolls sideways when it doesn't fit. */}
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-400">
               {data.kind === 'loading' && 'Loading…'}
-              {file &&
-                `Data from ${describeWhen(new Date(file.fetchedAt), now)} · ` +
-                  (filtering
-                    ? `${shown} of ${allOffers.length} offers`
-                    : `${allOffers.length} offers`)}
               {data.kind === 'loaded' && !file && 'No data yet'}
-            </p>
+              {file && (
+                <>
+                  <span className="shrink-0 font-medium text-zinc-900 dark:text-zinc-100">
+                    {filtering
+                      ? `${shown} of ${allOffers.length} offers`
+                      : `${allOffers.length} offers`}
+                  </span>
+                  <span aria-hidden className="shrink-0">
+                    ·
+                  </span>
+                  <span className="hidden shrink-0 sm:inline">
+                    {`Data from ${describeWhen(new Date(file.fetchedAt), now)}`}
+                  </span>
+                  <span className="shrink-0 sm:hidden">
+                    {`Data ${describeWhenShort(new Date(file.fetchedAt), now)}`}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           <AppMenu
             onColumns={() => setColumnsOpen(true)}

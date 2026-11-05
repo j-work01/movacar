@@ -72,3 +72,24 @@ export function describeWhen(
   const relative = days === 1 ? 'yesterday' : `${days} days ago`
   return `${date} (${relative}) at ${time}`
 }
+
+/** Short, for a phone: "5 Nov, 00:35 (4 h ago)". */
+export function describeWhenShort(when: Date, now: Date): string {
+  const time = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(when)
+  const minutes = Math.max(
+    0,
+    Math.round((now.getTime() - when.getTime()) / 60_000),
+  )
+  const ago =
+    minutes < 60
+      ? `${minutes} min ago`
+      : minutes < 48 * 60
+        ? `${Math.round(minutes / 60)} h ago`
+        : `${Math.round(minutes / 1440)} days ago`
+  return `${time} (${ago})`
+}

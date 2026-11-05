@@ -130,7 +130,8 @@ describe('App', () => {
   it('shows how old the data is, and the offers', async () => {
     serve({ status: OK, offers: OFFERS })
     render(<App />)
-    expect((await dataLine()).textContent).toMatch(/ · 3 offers$/)
+    await dataLine()
+    expect(screen.getByText('3 offers')).toBeTruthy()
     expect(rows()).toBe(3)
     expect(screen.queryByRole('alert')).toBeNull()
   })
@@ -277,7 +278,8 @@ describe('filters', () => {
       ).getByLabelText(/^Madrid/),
     )
     expect(rows()).toBe(1)
-    expect((await dataLine()).textContent).toMatch(/ · 1 of 3 offers$/)
+    await dataLine()
+    expect(screen.getByText('1 of 3 offers')).toBeTruthy()
     expect(window.location.search).toBe('?from=Madrid')
     expect(
       within(screen.getByRole('list', { name: 'Active filters' })).getByText(
@@ -290,7 +292,8 @@ describe('filters', () => {
     history.replaceState(null, '', '/?fromCountry=DE&sort=-from')
     serve({ status: OK, offers: OFFERS })
     render(<App />)
-    expect((await dataLine()).textContent).toMatch(/ · 2 of 3 offers$/)
+    await dataLine()
+    expect(screen.getByText('2 of 3 offers')).toBeTruthy()
 
     const cells = screen
       .getAllByRole('row')
