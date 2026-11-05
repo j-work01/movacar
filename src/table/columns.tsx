@@ -1,6 +1,7 @@
-// Every column of the offers table, in display order. One list feeds the
-// table, the filters, the column chooser and the CSV export, so they can't
-// drift apart.
+// Every column of the offers table, in display order: text, the logo,
+// dates, then numbers. Hidden columns sit in their group too. One list feeds
+// the table, the filters, the column chooser and the CSV export, so they
+// can't drift apart.
 
 // This module holds definitions, not components. Editing it during
 // development reloads the page instead of hot-swapping, which is fine.
@@ -32,7 +33,7 @@ import {
   isoDay,
   stationAddress,
 } from '../lib/format.ts'
-import { CompanyLogo, Country, OfferLink, Place } from './cells.tsx'
+import { CompanyLogo, Country, DaysCell, OfferLink, Place } from './cells.tsx'
 import { FILTER_FNS, type FilterKind } from './filters.ts'
 
 export const features = tableFeatures({
@@ -61,6 +62,8 @@ export interface ColumnConfig {
   header?: string
   /** Numbers are right-aligned; dates sort by time. */
   kind: 'text' | 'number' | 'date'
+  /** Overrides the alignment that comes with the kind. */
+  align?: 'start' | 'end'
   shownByDefault: boolean
   /** The value the column sorts and filters by. */
   value: (offer: Offer) => Value
@@ -106,15 +109,6 @@ export const totalDays = (offer: Offer) => {
   return included === undefined ? undefined : included + (extraDays(offer) ?? 0)
 }
 
-/** "20 (15+5)" with extra days, otherwise just "19". */
-export function daysText(offer: Offer): string {
-  const included = includedDays(offer)
-  if (included === undefined) return '—'
-  const extra = extraDays(offer) ?? 0
-  if (extra === 0) return formatNumber(included)
-  return `${formatNumber(included + extra)} (${formatNumber(included)}+${formatNumber(extra)})`
-}
-
 const currencyOf = (offer: Offer) => offer.price?.currency ?? 'EUR'
 
 const countryLabel = (code: string) => `${countryName(code)} (${code})`
@@ -127,6 +121,7 @@ const placeTooltip = (station: Offer['from']) =>
 const euros = (value: number) => formatMoney(value, 'EUR')
 
 export const COLUMNS: ColumnConfig[] = [
+  // Text
   {
     id: 'from',
     label: 'From',
@@ -139,7 +134,7 @@ export const COLUMNS: ColumnConfig[] = [
   {
     id: 'fromCountry',
     label: 'From country',
-    header: 'Country',
+    header: 'C',
     kind: 'text',
     shownByDefault: true,
     value: (o) => blank(o.from.country),
@@ -159,7 +154,7 @@ export const COLUMNS: ColumnConfig[] = [
   {
     id: 'toCountry',
     label: 'To country',
-    header: 'Country',
+    header: 'C',
     kind: 'text',
     shownByDefault: true,
     value: (o) => blank(o.to.country),
@@ -183,6 +178,23 @@ export const COLUMNS: ColumnConfig[] = [
     value: (o) => blank(o.category),
   },
   {
+    id: 'fromAddress',
+    label: 'From address',
+    kind: 'text',
+    shownByDefault: false,
+    value: (o) => stationAddress(o.from),
+    filter: 'text',
+  },
+  {
+    id: 'toAddress',
+    label: 'To address',
+    kind: 'text',
+    shownByDefault: false,
+    value: (o) => stationAddress(o.to),
+    filter: 'text',
+  },
+  // Logo
+  {
     id: 'company',
     label: 'Company',
     kind: 'text',
@@ -190,43 +202,7 @@ export const COLUMNS: ColumnConfig[] = [
     value: (o) => companyFromLogo(o.brandLogoUrl),
     render: (o) => <CompanyLogo url={o.brandLogoUrl} />,
   },
-  {
-    id: 'seats',
-    label: 'Seats',
-    kind: 'number',
-    shownByDefault: false,
-    value: (o) => blank(o.seats),
-  },
-  {
-    id: 'sleeps',
-    label: 'Sleeps',
-    kind: 'number',
-    shownByDefault: true,
-    value: (o) => blank(o.sleeps),
-  },
-  {
-    id: 'doors',
-    label: 'Doors',
-    kind: 'number',
-    shownByDefault: false,
-    value: (o) => blank(o.doors),
-  },
-  {
-    id: 'minDriverAge',
-    label: 'Min. driver age',
-    header: 'Min. age',
-    kind: 'number',
-    shownByDefault: false,
-    value: (o) => blank(o.minDriverAge),
-  },
-  {
-    id: 'minLicence',
-    label: 'Min. licence (years)',
-    header: 'Licence (yrs)',
-    kind: 'number',
-    shownByDefault: false,
-    value: (o) => per(o.minLicenceMonths, 12),
-  },
+  // Dates
   {
     id: 'startDate',
     label: 'Earliest pick-up',
@@ -250,13 +226,23 @@ export const COLUMNS: ColumnConfig[] = [
     shownByDefault: true,
     value: (o) => blank(o.endDate),
   },
+  // Numbers
   {
     id: 'totalDays',
     label: 'Days',
     kind: 'number',
     shownByDefault: true,
     value: totalDays,
-    render: daysText,
+    // "20 (15+5)", with extra days. The totals line up, and the sum follows
+    // in grey.
+    align: 'start',
+    render: (o) => (
+      <DaysCell
+        total={totalDays(o)}
+        included={includedDays(o)}
+        extra={extraDays(o)}
+      />
+    ),
   },
   {
     id: 'days',
@@ -314,20 +300,41 @@ export const COLUMNS: ColumnConfig[] = [
     formatAmount: euros,
   },
   {
-    id: 'fromAddress',
-    label: 'From address',
-    kind: 'text',
-    shownByDefault: false,
-    value: (o) => stationAddress(o.from),
-    filter: 'text',
+    id: 'sleeps',
+    label: 'Sleeps',
+    kind: 'number',
+    shownByDefault: true,
+    value: (o) => blank(o.sleeps),
   },
   {
-    id: 'toAddress',
-    label: 'To address',
-    kind: 'text',
+    id: 'seats',
+    label: 'Seats',
+    kind: 'number',
     shownByDefault: false,
-    value: (o) => stationAddress(o.to),
-    filter: 'text',
+    value: (o) => blank(o.seats),
+  },
+  {
+    id: 'doors',
+    label: 'Doors',
+    kind: 'number',
+    shownByDefault: false,
+    value: (o) => blank(o.doors),
+  },
+  {
+    id: 'minDriverAge',
+    label: 'Min. driver age',
+    header: 'Min. age',
+    kind: 'number',
+    shownByDefault: false,
+    value: (o) => blank(o.minDriverAge),
+  },
+  {
+    id: 'minLicence',
+    label: 'Min. licence (years)',
+    header: 'Licence (yrs)',
+    kind: 'number',
+    shownByDefault: false,
+    value: (o) => per(o.minLicenceMonths, 12),
   },
 ]
 
@@ -391,7 +398,15 @@ export const tableColumns = helper.columns([
   ...COLUMNS.map((column) =>
     helper.accessor((offer) => column.value(offer), {
       id: column.id,
-      header: column.header ?? column.label,
+      // A short header ("C") still reads as its full name to screen readers.
+      header: column.header
+        ? () => (
+            <>
+              <span aria-hidden="true">{column.header}</span>
+              <span className="sr-only">{column.label}</span>
+            </>
+          )
+        : column.label,
       cell: (info) =>
         column.render
           ? column.render(info.row.original)

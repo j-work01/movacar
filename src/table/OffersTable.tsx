@@ -1,13 +1,19 @@
 import { FlexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '../lib/cn.ts'
 import { ColumnFilter } from './ColumnFilter.tsx'
 import { COLUMN_BY_ID } from './columns.tsx'
 import type { OffersTableInstance } from './useOffersTable.ts'
 
-const kindOf = (columnId: string) => COLUMN_BY_ID.get(columnId)?.kind
+/** Numbers line up on the right, unless their column says otherwise. */
+const alignsEnd = (columnId: string) => {
+  const config = COLUMN_BY_ID.get(columnId)
+  return (
+    (config?.align ?? (config?.kind === 'number' ? 'end' : 'start')) === 'end'
+  )
+}
 
 /**
  * Long text gets a fixed width: cut off with "…" (the full text shows on
@@ -28,15 +34,11 @@ const TEXT_WIDTH: Record<string, string> = {
 /** A one-line row's height. Rows are measured once drawn, for wrapped text. */
 const ROW_HEIGHT = 33
 
+/** Only the sorted column shows an arrow, so the others stay narrow. */
 function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
-  const Icon =
-    sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ChevronsUpDown
-  return (
-    <Icon
-      aria-hidden
-      className={cn('size-3.5 shrink-0', !sorted && 'opacity-40')}
-    />
-  )
+  if (!sorted) return null
+  const Icon = sorted === 'asc' ? ArrowUp : ArrowDown
+  return <Icon aria-hidden className="size-3 shrink-0" />
 }
 
 /** Stands in for the rows above or below the screen, which aren't drawn. */
@@ -104,11 +106,14 @@ export function OffersTable({
               {group.headers.map((header) => {
                 const column = header.column
                 const sorted = column.getIsSorted()
-                const numeric = kindOf(column.id) === 'number'
+                const numeric = alignsEnd(column.id)
+                const config = COLUMN_BY_ID.get(column.id)
                 return (
                   <th
                     key={header.id}
                     scope="col"
+                    // "C" shows "From country" on hover.
+                    title={config?.header ? config.label : undefined}
                     aria-sort={
                       sorted === 'asc'
                         ? 'ascending'
@@ -116,12 +121,12 @@ export function OffersTable({
                           ? 'descending'
                           : undefined
                     }
-                    className="sticky top-0 z-10 border-b border-zinc-300 bg-zinc-50 px-3 py-2 text-left text-xs font-semibold whitespace-nowrap text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    className="sticky top-0 z-10 border-b border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs font-semibold whitespace-nowrap text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   >
                     {/* Numbers: right-aligned, like their values. */}
                     <div
                       className={cn(
-                        'flex items-center gap-1.5',
+                        'flex items-center gap-1',
                         numeric && 'flex-row-reverse',
                       )}
                     >
@@ -130,7 +135,7 @@ export function OffersTable({
                           type="button"
                           onClick={column.getToggleSortingHandler()}
                           className={cn(
-                            'flex items-center gap-1 rounded hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:text-white',
+                            'flex items-center gap-0.5 rounded hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:text-white',
                             numeric && 'flex-row-reverse',
                             sorted && 'text-zinc-950 dark:text-white',
                           )}
@@ -169,7 +174,12 @@ export function OffersTable({
                 data-index={item.index}
                 ref={virtualizer.measureElement}
                 aria-rowindex={item.index + 2}
-                className="hover:bg-zinc-50 dark:hover:bg-zinc-900/60"
+                className={cn(
+                  // Every other row is shaded, by position in the list (the
+                  // drawn rows change while scrolling, so CSS can't count them).
+                  item.index % 2 === 1 && 'bg-zinc-100/70 dark:bg-zinc-900',
+                  'hover:bg-blue-50 dark:hover:bg-zinc-800',
+                )}
               >
                 {row.getVisibleCells().map((cell) => {
                   const config = COLUMN_BY_ID.get(cell.column.id)
@@ -182,8 +192,8 @@ export function OffersTable({
                     <td
                       key={cell.id}
                       className={cn(
-                        'border-b border-zinc-100 px-3 py-1.5 align-top dark:border-zinc-800/70',
-                        config?.kind === 'number' && 'text-right tabular-nums',
+                        'px-2 py-1.5 align-top',
+                        alignsEnd(cell.column.id) && 'text-right tabular-nums',
                         config?.kind === 'date' && 'min-w-28',
                         !(width && wrap) && 'whitespace-nowrap',
                       )}

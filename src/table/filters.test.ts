@@ -11,7 +11,6 @@ import {
   matchesWords,
   normalize,
   onDays,
-  searchText,
   words,
 } from './filters.ts'
 
@@ -73,7 +72,7 @@ describe('date filters', () => {
   })
 })
 
-describe('text filter and search', () => {
+describe('text filters', () => {
   it('ignore case and accents, and need every word', () => {
     expect(normalize('Málaga')).toBe('malaga')
     expect(words('  VW   Crafter ')).toEqual(['vw', 'crafter'])
@@ -82,19 +81,11 @@ describe('text filter and search', () => {
     expect(containsWords(row('VW Crafter'), 'c', 'vw transit')).toBe(false)
   })
 
-  it('search cities, countries (by name too), vehicles and companies', () => {
-    const text = searchText(makeOffer('1'))
-    for (const query of [
-      'münchen',
-      'malaga',
-      'spain',
-      'germany es',
-      'road house',
-      'roadsurfer',
-    ]) {
-      expect(matchesWords(text, words(query)), query).toBe(true)
-    }
-    expect(matchesWords(text, words('portugal'))).toBe(false)
+  it('match words anywhere, in any order', () => {
+    // As in a tick-list's search box.
+    const text = normalize('München Hauptbahnhof')
+    expect(matchesWords(text, words('haupt münch'))).toBe(true)
+    expect(matchesWords(text, words('berlin'))).toBe(false)
   })
 })
 

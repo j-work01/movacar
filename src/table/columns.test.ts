@@ -1,10 +1,11 @@
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { Offer } from '../data/types.ts'
 import { makeOffer } from '../test/offers.ts'
 import {
   COLUMN_BY_ID,
   COLUMNS,
   csvValue,
-  daysText,
   DEFAULT_VISIBILITY,
 } from './columns.tsx'
 
@@ -27,13 +28,13 @@ describe('columns', () => {
       'To country',
       'Vehicle',
       'Company',
-      'Sleeps',
       'Earliest pick-up',
       'Return by',
       'Days',
       'Free km',
       'Route km',
       'Price',
+      'Sleeps',
     ])
   })
 
@@ -52,13 +53,16 @@ describe('columns', () => {
         periodHours: included * 24,
         extraPeriodHours: (included + extra) * 24,
       })
-    expect(daysText(days(15, 5))).toBe('20 (15+5)')
-    expect(daysText(days(19, 0))).toBe('19')
-    expect(daysText(days(2, 6))).toBe('8 (2+6)')
-    expect(daysText(days(1, 1))).toBe('2 (1+1)')
+    // The text of the cell, as it's copied or read aloud.
+    const shown = (offer: Offer) =>
+      render(column('totalDays').render?.(offer)).container.textContent
+    expect(shown(days(15, 5))).toBe('20 (15+5)')
+    expect(shown(days(19, 0))).toBe('19')
+    expect(shown(days(2, 6))).toBe('8 (2+6)')
+    expect(shown(days(1, 1))).toBe('2 (1+1)')
     // Sorted and filtered by all days together.
     expect(valueOf('totalDays', days(15, 5))).toBe(20)
-    expect(daysText(makeOffer('1', { periodHours: null }))).toBe('—')
+    expect(shown(makeOffer('1', { periodHours: null }))).toBe('—')
   })
 
   it('never show negative extra days', () => {

@@ -180,22 +180,26 @@ describe('the menu', () => {
   })
 })
 
-describe('search and filters', () => {
-  it('search narrows the offers, and the web address follows', async () => {
+describe('filters', () => {
+  it('narrow the offers, and the web address follows', async () => {
     serve({ status: OK, offers: OFFERS })
     render(<App />)
     await dataLine()
+    // There's no search box: the filters sit on the column headers.
+    expect(screen.queryByRole('searchbox')).toBeNull()
 
-    await userEvent.type(
-      screen.getByRole('searchbox', { name: 'Search' }),
-      'madrid',
+    await userEvent.click(screen.getByRole('button', { name: 'Filter From' }))
+    await userEvent.click(
+      within(
+        screen.getByRole('dialog', { name: 'Filter From' }),
+      ).getByLabelText(/^Madrid/),
     )
     expect(rows()).toBe(1)
     expect((await dataLine()).textContent).toMatch(/ · 1 of 3 offers$/)
-    expect(window.location.search).toBe('?q=madrid')
+    expect(window.location.search).toBe('?from=Madrid')
     expect(
       within(screen.getByRole('list', { name: 'Active filters' })).getByText(
-        '“madrid”',
+        'Madrid',
       ),
     ).toBeTruthy()
   })
@@ -215,7 +219,7 @@ describe('search and filters', () => {
   })
 
   it('can all be cleared at once', async () => {
-    history.replaceState(null, '', '/?fromCountry=DE&q=m')
+    history.replaceState(null, '', '/?fromCountry=DE&price=..200')
     serve({ status: OK, offers: OFFERS })
     render(<App />)
     await dataLine()
@@ -227,14 +231,14 @@ describe('search and filters', () => {
   })
 
   it('can be removed one by one', async () => {
-    history.replaceState(null, '', '/?fromCountry=DE&q=mannheim')
+    history.replaceState(null, '', '/?fromCountry=DE&from=Mannheim')
     serve({ status: OK, offers: OFFERS })
     render(<App />)
     await dataLine()
     expect(rows()).toBe(1)
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Remove filter: Search' }),
+      screen.getByRole('button', { name: 'Remove filter: From' }),
     )
     expect(rows()).toBe(2)
     expect(window.location.search).toBe('?fromCountry=DE')

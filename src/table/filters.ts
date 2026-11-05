@@ -3,7 +3,7 @@
 
 import type { FilterFn } from '@tanstack/react-table'
 import type { Offer } from '../data/types.ts'
-import { companyFromLogo, countryName, isoDay } from '../lib/format.ts'
+import { isoDay } from '../lib/format.ts'
 
 /**
  * - `list`: tick the values to keep (cities, countries, …)
@@ -106,30 +106,7 @@ export const FILTER_FNS: Record<FilterKind, Fn> = {
   text: containsWords,
 }
 
-// --- the search box: all words must appear somewhere in the offer.
-
-/** The text the search box looks through, without accents. */
-export function searchText(offer: Offer): string {
-  const country = (code: string | null) =>
-    code ? `${code} ${countryName(code)}` : ''
-  return normalize(
-    [
-      offer.from.name,
-      offer.from.city,
-      country(offer.from.country),
-      offer.to.name,
-      offer.to.city,
-      country(offer.to.country),
-      offer.make,
-      offer.model,
-      offer.category,
-      companyFromLogo(offer.brandLogoUrl),
-    ]
-      .filter(Boolean)
-      .join(' '),
-  )
-}
-
+/** True if every word appears in the text (both already normalized). */
 export const matchesWords = (text: string, queryWords: string[]) =>
   queryWords.every((word) => text.includes(word))
 

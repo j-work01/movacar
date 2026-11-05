@@ -86,14 +86,19 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 - **Filters:** a funnel on every column header, fitted to its data: a tick-list
   with counts (cities, countries, category, company), min–max (numbers), from–to
   (dates) or "contains" (vehicle, addresses). Filters combine. Active filters show
-  as removable chips, with "Clear all".
-- **Search box:** every word must appear in the offer's cities, countries (code or
-  name), vehicle, category or company; accents don't matter.
+  as removable chips, with "Clear all". (There was a search box too; it was
+  removed, as the column filters cover it.)
 - **Date filter:** on Earliest pick-up, an offer shows if its pick-up window
   overlaps your dates.
 - **Sorting:** one column at a time, ascending or descending. Blanks always go last;
   accents and numbers sort properly.
 - **Columns:** show or hide each column; the choice is remembered per device.
+  Grouped in this order: text, the company logo, dates, numbers. The country
+  columns are headed "C" (the full name shows on hover).
+- **Days:** "20 (15+5)": the totals line up, and the sum is in grey.
+- **Easy to read:** every other row is shaded. Headers stay narrow: only the
+  sorted column shows an arrow, and the filter funnel is small (with a bigger
+  area around it to tap).
 - **Shareable views:** filters and sort live in the web address, so a view can be
   bookmarked or sent.
 - **One line per row:** long text is cut off with "…", and the full text shows
@@ -127,6 +132,8 @@ also from GitHub's own website). The history and data came along.
    - ✅ **2b:** a filter on every column, the search box, filters and sorting kept
      in the web address, Share this view, one line per row with Wrap text, the
      Days column, and the new default columns.
+   - ✅ **Refinements:** no search box, the column order and groups, "C" for the
+     countries, the Days layout, shaded rows and narrower headers.
    - **2c:** "Refresh started … ago. Refreshing…" while a refresh runs.
 3. **Phone polish.**
 

@@ -1,4 +1,4 @@
-// The view (sorting, filters, search) and the web address, so a view can be
+// The view (sorting and filters) and the web address, so a view can be
 // bookmarked or shared: ?fromCountry=NL&sleeps=2..&price=..1&sort=-price
 
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table'
@@ -8,7 +8,6 @@ import { filterFromUrl, filterToUrl } from './filters.ts'
 export interface ViewState {
   sorting: SortingState
   columnFilters: ColumnFiltersState
-  search: string
 }
 
 /** Sorted by earliest pick-up until the viewer picks another column. */
@@ -17,7 +16,6 @@ export const DEFAULT_SORTING: SortingState = [{ id: 'startDate', desc: false }]
 export const DEFAULT_VIEW: ViewState = {
   sorting: DEFAULT_SORTING,
   columnFilters: [],
-  search: '',
 }
 
 /** Reads a view from the web address. Anything that doesn't make sense is ignored. */
@@ -40,15 +38,12 @@ export function viewFromUrl(query: string): ViewState {
     if (value !== undefined) columnFilters.push({ id, value })
   }
 
-  return { sorting, columnFilters, search: params.get('q')?.trim() ?? '' }
+  return { sorting, columnFilters }
 }
 
 /** The query part of the web address for a view; empty for the default view. */
 export function viewToUrl(view: ViewState): string {
   const params = new URLSearchParams()
-  const search = view.search.trim()
-  if (search) params.set('q', search)
-
   for (const filter of view.columnFilters) {
     const column = COLUMN_BY_ID.get(filter.id)
     if (!column) continue

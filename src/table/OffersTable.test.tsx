@@ -35,10 +35,13 @@ function Board({ offers, wrap = false }: { offers: Offer[]; wrap?: boolean }) {
 
 // `hidden: true` because an open dialog hides the page behind it from
 // screen readers, and these helpers still need to read the table.
+/** The column headers as screen readers read them: "From country" for "C". */
 const headers = () =>
-  screen
-    .getAllByRole('columnheader', { hidden: true })
-    .map((th) => th.textContent ?? '')
+  screen.getAllByRole('columnheader', { hidden: true }).map((th) => {
+    const copy = th.cloneNode(true) as HTMLElement
+    copy.querySelectorAll('[aria-hidden="true"]').forEach((el) => el.remove())
+    return copy.textContent ?? ''
+  })
 
 /** The text of one column, top to bottom. */
 function column(label: string) {
@@ -99,21 +102,30 @@ describe('OffersTable', () => {
     render(<Board offers={OFFERS} />)
     expect(headers()).toEqual([
       'From',
-      'Country',
+      'From country',
       'To',
-      'Country',
+      'To country',
       'Vehicle',
       'Company',
-      'Sleeps',
       'Earliest pick-up',
       'Return by',
       'Days',
       'Free km',
       'Route km',
       'Price',
+      'Sleeps',
       'Link',
     ])
     expect(screen.getByRole('table').getAttribute('aria-rowcount')).toBe('5')
+  })
+
+  it('shows "C" for the countries, with the full name on hover', () => {
+    render(<Board offers={OFFERS} />)
+    const th = screen.getByRole('columnheader', { name: /^From country/ })
+    expect(th.textContent).toMatch(/^C/)
+    expect(th.title).toBe('From country')
+    // Sorting by it still works under its full name.
+    expect(screen.getByRole('button', { name: 'From country' })).toBeTruthy()
   })
 
   it('starts sorted by earliest pick-up', () => {
@@ -228,7 +240,7 @@ describe('choosing columns', () => {
       within(dialog).getByRole('button', { name: 'Show all' }),
     )
     expect(headers()).toContain('From address')
-    expect(headers()).toContain('Min. age')
+    expect(headers()).toContain('Min. driver age')
 
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Reset to default' }),
