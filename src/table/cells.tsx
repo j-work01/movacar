@@ -1,9 +1,9 @@
 import type { Station } from '../data/types.ts'
-import { companyFromLogo, countryName, stationAddress } from '../lib/format.ts'
+import { companyFromLogo, countryName } from '../lib/format.ts'
 
-/** A city name; the address shows on hover. */
+/** A city name. (The table shows the full name and address on hover.) */
 export function Place({ station }: { station: Station }) {
-  return <span title={stationAddress(station)}>{station.name || '—'}</span>
+  return <>{station.name || '—'}</>
 }
 
 /** "DE", with "Germany" on hover. */

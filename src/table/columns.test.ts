@@ -4,6 +4,7 @@ import {
   COLUMN_BY_ID,
   COLUMNS,
   csvValue,
+  daysText,
   DEFAULT_VISIBILITY,
 } from './columns.tsx'
 
@@ -15,17 +16,24 @@ const column = (id: string) => {
 const valueOf = (id: string, offer = makeOffer('1')) => column(id).value(offer)
 
 describe('columns', () => {
-  it('hide Company, minimum ages, doors and addresses by default', () => {
-    const hidden = COLUMNS.filter((c) => !DEFAULT_VISIBILITY[c.id]).map(
+  it('show the agreed columns by default', () => {
+    const shown = COLUMNS.filter((c) => DEFAULT_VISIBILITY[c.id]).map(
       (c) => c.label,
     )
-    expect(hidden).toEqual([
+    expect(shown).toEqual([
+      'From',
+      'From country',
+      'To',
+      'To country',
+      'Vehicle',
       'Company',
-      'Doors',
-      'Min. driver age',
-      'Min. licence (years)',
-      'From address',
-      'To address',
+      'Sleeps',
+      'Earliest pick-up',
+      'Return by',
+      'Days',
+      'Free km',
+      'Route km',
+      'Price',
     ])
   })
 
@@ -36,6 +44,21 @@ describe('columns', () => {
     expect(valueOf('extraKm')).toBe(0.5)
     expect(valueOf('routeKm')).toBe(2332)
     expect(valueOf('minLicence')).toBe(1) // 12 months
+  })
+
+  it('show all days, with the included + extra ones in brackets', () => {
+    const days = (included: number, extra: number) =>
+      makeOffer('1', {
+        periodHours: included * 24,
+        extraPeriodHours: (included + extra) * 24,
+      })
+    expect(daysText(days(15, 5))).toBe('20 (15+5)')
+    expect(daysText(days(19, 0))).toBe('19')
+    expect(daysText(days(2, 6))).toBe('8 (2+6)')
+    expect(daysText(days(1, 1))).toBe('2 (1+1)')
+    // Sorted and filtered by all days together.
+    expect(valueOf('totalDays', days(15, 5))).toBe(20)
+    expect(daysText(makeOffer('1', { periodHours: null }))).toBe('—')
   })
 
   it('never show negative extra days', () => {
