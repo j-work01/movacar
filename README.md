@@ -4,7 +4,7 @@ A sortable, filterable overview of [Movacar](https://movacar.com) one-way transf
 offers: cars, vans and campers that need to be moved from A to B. It works on a
 laptop and on a phone.
 
-**Live site:** https://j-work01.github.io/movacar-board/
+**Live site:** https://j-work01.github.io/movacar/
 
 > Work in progress. See [docs/PLAN.md](docs/PLAN.md) for the plan and the decisions
 > made so far.
@@ -14,7 +14,7 @@ laptop and on a phone.
 The data is only refreshed when someone asks for it. There is no timer, so Movacar's
 API isn't called when nobody uses the board.
 
-To refresh, open **[Actions → Refresh data](https://github.com/j-work01/movacar-board/actions/workflows/refresh.yml)**
+To refresh, open **[Actions → Refresh data](https://github.com/j-work01/movacar/actions/workflows/refresh.yml)**
 on GitHub and press **Run workflow**. This also works in a phone's browser. You need
 write access to this repository to do it. A refresh takes about 3–5 minutes; then the
 site shows the new data with its date and time.

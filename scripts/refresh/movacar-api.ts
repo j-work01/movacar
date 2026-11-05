@@ -69,8 +69,7 @@ export async function getJson(
       response = await fetchFn(url, {
         headers: {
           Accept: 'application/vnd.api+json',
-          'User-Agent':
-            'movacar-board (+https://github.com/j-work01/movacar-board)',
+          'User-Agent': 'movacar-board (+https://github.com/j-work01/movacar)',
         },
         signal: AbortSignal.timeout(timeoutMs),
       })

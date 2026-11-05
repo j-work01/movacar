@@ -75,7 +75,7 @@ describe('App', () => {
       screen.getByRole('link', { name: 'Refresh data on GitHub' }),
     ).toHaveProperty(
       'href',
-      'https://github.com/j-work01/movacar-board/actions/workflows/refresh.yml',
+      'https://github.com/j-work01/movacar/actions/workflows/refresh.yml',
     )
   })
 

@@ -111,6 +111,10 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 
 ## Steps
 
+On 5 Nov 2026 the project moved here from `j-work01/movacar-board`, because GitHub
+stopped saving any branch changes in that repository ("fatal error in commit_refs",
+also from GitHub's own website). The history and data came along.
+
 0. ✅ **Skeleton:** project setup, checks on every pull request, publishing to
    GitHub Pages.
 1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
