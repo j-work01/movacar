@@ -1,18 +1,19 @@
 import { FlexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '../lib/cn.ts'
+import { ColumnFilter } from './ColumnFilter.tsx'
 import { COLUMN_BY_ID } from './columns.tsx'
 import type { OffersTableInstance } from './useOffersTable.ts'
 
 const kindOf = (columnId: string) => COLUMN_BY_ID.get(columnId)?.kind
 
 /**
- * Only the rows on screen are drawn (see below), so column widths can't come
- * from the content: they would jump while scrolling. Long text gets a fixed
- * width and wraps ("Saint-Jean-de-Gonville (near Geneva)"); dates get a
- * minimum width. The width sits on a box inside the cell, because browsers
+ * Long text gets a fixed width: cut off with "…" (the full text shows on
+ * hover), or wrapped when "Wrap text" is on. Fixed, because only the rows on
+ * screen are drawn (see below): widths taken from the content would jump
+ * while scrolling. The width sits on a box inside the cell, because browsers
  * don't reliably apply widths to table cells themselves.
  */
 const TEXT_WIDTH: Record<string, string> = {
@@ -24,7 +25,7 @@ const TEXT_WIDTH: Record<string, string> = {
   toAddress: 'w-64',
 }
 
-/** A typical row's height. Rows are measured once drawn, since long text wraps. */
+/** A one-line row's height. Rows are measured once drawn, for wrapped text. */
 const ROW_HEIGHT = 33
 
 function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
@@ -52,7 +53,17 @@ function Spacer({ height, columns }: { height: number; columns: number }) {
  * The offers table. With 800+ offers, drawing every row makes a phone slow
  * (seconds per sort), so only the rows on screen, plus a few, are drawn.
  */
-export function OffersTable({ table }: { table: OffersTableInstance }) {
+export function OffersTable({
+  table,
+  wrap = false,
+  emptyMessage,
+}: {
+  table: OffersTableInstance
+  /** Wrap long text over several lines instead of cutting it off. */
+  wrap?: boolean
+  /** Shown instead of rows when nothing matches. */
+  emptyMessage?: ReactNode
+}) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
   const headerGroups = table.getHeaderGroups()
@@ -75,11 +86,11 @@ export function OffersTable({ table }: { table: OffersTableInstance }) {
       ? virtualizer.getTotalSize() - items[items.length - 1].end
       : 0
 
-  // After a new sort, show the top of the list.
-  const sorting = JSON.stringify(table.state.sorting)
+  // After a new sort or filter, show the top of the list.
+  const view = JSON.stringify([table.state.sorting, table.state.columnFilters])
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
-  }, [sorting])
+  }, [view])
 
   return (
     <div ref={scrollRef} className="h-full overflow-auto">
@@ -105,28 +116,33 @@ export function OffersTable({ table }: { table: OffersTableInstance }) {
                           ? 'descending'
                           : undefined
                     }
-                    className={cn(
-                      'sticky top-0 z-10 border-b border-zinc-300 bg-zinc-50 px-3 py-2 text-xs font-semibold whitespace-nowrap text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
-                      numeric ? 'text-right' : 'text-left',
-                    )}
+                    className="sticky top-0 z-10 border-b border-zinc-300 bg-zinc-50 px-3 py-2 text-left text-xs font-semibold whitespace-nowrap text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   >
-                    {column.getCanSort() ? (
-                      <button
-                        type="button"
-                        onClick={column.getToggleSortingHandler()}
-                        className={cn(
-                          // Numbers: the label lines up with the right-aligned values.
-                          'flex w-full items-center gap-1 rounded hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:text-white',
-                          numeric && 'flex-row-reverse',
-                          sorted && 'text-zinc-950 dark:text-white',
-                        )}
-                      >
+                    {/* Numbers: right-aligned, like their values. */}
+                    <div
+                      className={cn(
+                        'flex items-center gap-1.5',
+                        numeric && 'flex-row-reverse',
+                      )}
+                    >
+                      {column.getCanSort() ? (
+                        <button
+                          type="button"
+                          onClick={column.getToggleSortingHandler()}
+                          className={cn(
+                            'flex items-center gap-1 rounded hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:text-white',
+                            numeric && 'flex-row-reverse',
+                            sorted && 'text-zinc-950 dark:text-white',
+                          )}
+                        >
+                          <FlexRender header={header} />
+                          <SortIcon sorted={sorted} />
+                        </button>
+                      ) : (
                         <FlexRender header={header} />
-                        <SortIcon sorted={sorted} />
-                      </button>
-                    ) : (
-                      <FlexRender header={header} />
-                    )}
+                      )}
+                      <ColumnFilter column={column} />
+                    </div>
                   </th>
                 )
               })}
@@ -134,6 +150,16 @@ export function OffersTable({ table }: { table: OffersTableInstance }) {
           ))}
         </thead>
         <tbody>
+          {rows.length === 0 && emptyMessage && (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="px-4 py-10 text-center text-zinc-600 dark:text-zinc-400"
+              >
+                {emptyMessage}
+              </td>
+            </tr>
+          )}
           <Spacer height={spaceAbove} columns={columnCount} />
           {items.map((item) => {
             const row = rows[item.index]
@@ -146,20 +172,27 @@ export function OffersTable({ table }: { table: OffersTableInstance }) {
                 className="hover:bg-zinc-50 dark:hover:bg-zinc-900/60"
               >
                 {row.getVisibleCells().map((cell) => {
-                  const kind = kindOf(cell.column.id)
+                  const config = COLUMN_BY_ID.get(cell.column.id)
                   const width = TEXT_WIDTH[cell.column.id]
+                  const value = cell.getValue()
+                  const tooltip =
+                    config?.tooltip?.(row.original) ??
+                    (typeof value === 'string' ? value : undefined)
                   return (
                     <td
                       key={cell.id}
                       className={cn(
                         'border-b border-zinc-100 px-3 py-1.5 align-top dark:border-zinc-800/70',
-                        kind === 'number' && 'text-right tabular-nums',
-                        kind === 'date' && 'min-w-28',
-                        !width && 'whitespace-nowrap',
+                        config?.kind === 'number' && 'text-right tabular-nums',
+                        config?.kind === 'date' && 'min-w-28',
+                        !(width && wrap) && 'whitespace-nowrap',
                       )}
                     >
                       {width ? (
-                        <div className={width}>
+                        <div
+                          className={cn(width, !wrap && 'truncate')}
+                          title={tooltip}
+                        >
                           <FlexRender cell={cell} />
                         </div>
                       ) : (

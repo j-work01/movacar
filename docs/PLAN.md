@@ -30,27 +30,29 @@ calculated or guessed it. The one exception is country (see below).
 
 All columns come straight from the API, apart from the two country columns.
 
-| Column                        | API field                           | Shown by default |
-| ----------------------------- | ----------------------------------- | ---------------- |
-| From, To                      | station `city` / `alternative_city` | yes              |
-| From/To country               | calculated from station coordinates | yes              |
-| Vehicle                       | `make` + `model`                    | yes              |
-| Category                      | `vehicle_category_name`             | yes              |
-| Seats, Sleeps                 | `seats`, `sleeping`                 | yes              |
-| Earliest pick-up              | `start_date`                        | yes              |
-| Latest pick-up                | `latest_pickup`                     | yes              |
-| Return by                     | `end_date`                          | yes              |
-| Days incl.                    | `period` (hours)                    | yes              |
-| Extra days (that you can buy) | `extra_period` − `period`           | yes              |
-| Free km                       | `free_km`                           | yes              |
-| €/extra km                    | `cents_per_extra_km`                | yes              |
-| Route km                      | `distance` (metres)                 | yes              |
-| Price                         | `base_price` amount + currency      | yes              |
-| Company                       | `brand_image_url` (logo only)       | no               |
-| Min. driver age               | `min_drivers_age`                   | no               |
-| Min. licence (years)          | `min_licence_age` (months)          | no               |
-| Doors, street, postcode       | as sent                             | no               |
-| Link                          | the offer's own page on movacar.com | yes              |
+| Column               | API field                                     | Shown by default |
+| -------------------- | --------------------------------------------- | ---------------- |
+| From, To             | station `city` / `alternative_city`           | yes              |
+| From/To country      | calculated from station coordinates           | yes              |
+| Vehicle              | `make` + `model`                              | yes              |
+| Company              | `brand_image_url` (logo only)                 | yes              |
+| Sleeps               | `sleeping`                                    | yes              |
+| Earliest pick-up     | `start_date`                                  | yes              |
+| Return by            | `end_date`                                    | yes              |
+| Days                 | all days: "20 (15+5)", or "19" with no extras | yes              |
+| Free km              | `free_km`                                     | yes              |
+| Route km             | `distance` (metres)                           | yes              |
+| Price                | `base_price` amount + currency                | yes              |
+| Link                 | the offer's own page on movacar.com           | yes              |
+| Category             | `vehicle_category_name`                       | no               |
+| Seats, doors         | `seats`, `doors`                              | no               |
+| Latest pick-up       | `latest_pickup`                               | no               |
+| Days incl.           | `period` (hours)                              | no               |
+| Extra days (to buy)  | `extra_period` − `period`                     | no               |
+| €/extra km           | `cents_per_extra_km`                          | no               |
+| Min. driver age      | `min_drivers_age`                             | no               |
+| Min. licence (years) | `min_licence_age` (months)                    | no               |
+| From/To address      | `street`, `postal_code`, `city`               | no               |
 
 **Dropped:** fuel, gear, fuel policy and vehicle type. These only come as Movacar
 codes, and V04's labels for them turned out to be wrong (its "Car" was
@@ -81,17 +83,23 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 
 ## Website
 
-- **Filters:** one per column, fitted to its data: a searchable tick-list with counts
-  (cities, countries, category …), min–max (numbers) or from–to (dates). Filters
-  combine. Active filters show as removable chips, with "Clear all" and a search box.
-- **Date filter:** an offer shows if its pick-up window overlaps your dates.
+- **Filters:** a funnel on every column header, fitted to its data: a tick-list
+  with counts (cities, countries, category, company), min–max (numbers), from–to
+  (dates) or "contains" (vehicle, addresses). Filters combine. Active filters show
+  as removable chips, with "Clear all".
+- **Search box:** every word must appear in the offer's cities, countries (code or
+  name), vehicle, category or company; accents don't matter.
+- **Date filter:** on Earliest pick-up, an offer shows if its pick-up window
+  overlaps your dates.
 - **Sorting:** one column at a time, ascending or descending. Blanks always go last;
   accents and numbers sort properly.
 - **Columns:** show or hide each column; the choice is remembered per device.
 - **Shareable views:** filters and sort live in the web address, so a view can be
   bookmarked or sent.
-- **Menu (☰):** Refresh data (opens GitHub), Columns, Clear filters, Share this view,
-  Export CSV.
+- **One line per row:** long text is cut off with "…", and the full text shows
+  on hover. ☰ → **Wrap text** shows it all (remembered per device).
+- **Menu (☰):** Columns, Wrap text, Share this view, Clear filters, Export CSV,
+  Refresh data (opens GitHub).
 - **Data age:** "Data from 4 November (today) at 21:24 (12 min ago)", or
   "Data from 2 November (2 days ago) at 21:24".
 - **During a refresh:** "Refresh started 3 minutes and 53 seconds ago. Refreshing…",
@@ -103,6 +111,10 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 
 ## Steps
 
+On 5 Nov 2026 the project moved here from `j-work01/movacar-board`, because GitHub
+stopped saving any branch changes in that repository ("fatal error in commit_refs",
+also from GitHub's own website). The history and data came along.
+
 0. ✅ **Skeleton:** project setup, checks on every pull request, publishing to
    GitHub Pages.
 1. ✅ **API notes + Refresh data:** [notes on every field](api.md) with real
@@ -112,8 +124,9 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
    - ✅ **2a:** the columns, sorting by one column, show/hide columns (remembered
      per device), the ☰ menu and Export CSV. Each row links to the offer's own
      page on movacar.com.
-   - **2b:** a filter on every column, the search box, and filters and sorting
-     kept in the web address.
+   - ✅ **2b:** a filter on every column, the search box, filters and sorting kept
+     in the web address, Share this view, one line per row with Wrap text, the
+     Days column, and the new default columns.
    - **2c:** "Refresh started … ago. Refreshing…" while a refresh runs.
 3. **Phone polish.**
 

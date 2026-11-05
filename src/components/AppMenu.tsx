@@ -1,10 +1,14 @@
 import {
+  Check,
   Columns3,
   Download,
   ExternalLink,
+  FunnelX,
   Info,
   Menu,
   RefreshCw,
+  Share2,
+  WrapText,
   type LucideIcon,
 } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
@@ -51,10 +55,20 @@ function LinkItem({
 /** The ☰ menu: actions that would clutter the screen, especially on a phone. */
 export function AppMenu({
   onColumns,
+  wrap,
+  onWrapChange,
+  onShare,
+  onClearFilters,
+  canClearFilters,
   onExport,
   canExport,
 }: {
   onColumns: () => void
+  wrap: boolean
+  onWrapChange: (wrap: boolean) => void
+  onShare: () => void
+  onClearFilters: () => void
+  canClearFilters: boolean
   onExport: () => void
   canExport: boolean
 }) {
@@ -74,6 +88,27 @@ export function AppMenu({
         >
           <DropdownMenu.Item className={item} onSelect={onColumns}>
             <Label icon={Columns3}>Columns…</Label>
+          </DropdownMenu.Item>
+          <DropdownMenu.CheckboxItem
+            className={item}
+            checked={wrap}
+            onCheckedChange={onWrapChange}
+          >
+            <Label icon={WrapText}>Wrap text</Label>
+            <DropdownMenu.ItemIndicator>
+              <Check aria-hidden className="size-4 text-blue-700" />
+            </DropdownMenu.ItemIndicator>
+          </DropdownMenu.CheckboxItem>
+          <DropdownMenu.Separator className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+          <DropdownMenu.Item className={item} onSelect={onShare}>
+            <Label icon={Share2}>Share this view</Label>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={item}
+            onSelect={onClearFilters}
+            disabled={!canClearFilters}
+          >
+            <Label icon={FunnelX}>Clear filters</Label>
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={item}

@@ -21,13 +21,13 @@ describe('offersToCsv', () => {
     expect(header).toBe(
       'From,From country,To,To country,Vehicle,Category,Company,Seats,Sleeps,' +
         'Doors,Min. driver age,Min. licence (years),Earliest pick-up,' +
-        'Latest pick-up,Return by,Days incl.,Extra days,Free km,€/extra km,' +
+        'Latest pick-up,Return by,Days,Days incl.,Extra days,Free km,€/extra km,' +
         'Route km,Price,From address,To address,Link',
     )
     expect(row).toBe(
       'München,Germany,Málaga,Spain,ROAD HOUSE Westfalia Eliseo C540 - Fiat Ducato 8,' +
         'ROAD HOUSE,roadsurfer,4,4,5,18,1,2026-11-21,2026-11-27,2026-11-28,' +
-        '5,1,2600,0.5,2332,129,München,Málaga,' +
+        '6,5,1,2600,0.5,2332,129,München,Málaga,' +
         'https://movacar.com/en-US/checkout/261802?origin=1&destination=2',
     )
   })
