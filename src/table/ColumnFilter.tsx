@@ -12,8 +12,10 @@ import {
   type Features,
 } from './columns.tsx'
 import {
+  EITHER_END,
   matchesWords,
   normalize,
+  OTHER_END,
   words,
   type DatesValue,
   type ListValue,
@@ -46,7 +48,8 @@ function ListEditor({
     for (const value of counts.keys()) {
       if (value !== undefined) values.add(String(value))
     }
-    for (const value of selected) values.add(value) // keep ticked ones visible
+    // Keep ticked ones visible (but not the "either end" switch).
+    for (const value of selected) if (value !== EITHER_END) values.add(value)
     return [...values]
       .map((value) => ({
         value,
@@ -238,6 +241,32 @@ function TextEditor({
   )
 }
 
+/**
+ * For cities and countries, once something is ticked: count it at either end
+ * of the trip ("From or To country"), so trips to it stay too.
+ */
+function EitherEnd({ column }: { column: OffersColumn }) {
+  const selected =
+    (column.getFilterValue() as ListValue | undefined) ?? NOTHING_TICKED
+  const ticked = selected.filter((value) => value !== EITHER_END)
+  if (ticked.length === 0) return null
+  const on = selected.includes(EITHER_END)
+  const noun = column.id.endsWith('Country') ? 'country' : 'city'
+  return (
+    <label className="mt-2 flex cursor-pointer items-center gap-2 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-700">
+      <input
+        type="checkbox"
+        className="size-4 shrink-0 accent-blue-700"
+        checked={on}
+        onChange={() =>
+          column.setFilterValue(on ? ticked : [...ticked, EITHER_END])
+        }
+      />
+      From or To {noun}
+    </label>
+  )
+}
+
 /** The funnel button in a column header, and the filter it opens. */
 export function ColumnFilter({ column }: { column: OffersColumn }) {
   // Bumped by "Clear", so the editors forget what was typed in them.
@@ -299,6 +328,9 @@ export function ColumnFilter({ column }: { column: OffersColumn }) {
           </div>
           <div key={resets}>
             {kind === 'list' && <ListEditor column={column} config={config} />}
+            {kind === 'list' && OTHER_END[column.id] && (
+              <EitherEnd column={column} />
+            )}
             {kind === 'range' && <RangeEditor column={column} />}
             {(kind === 'dates' || kind === 'pickup') && (
               <DatesEditor column={column} pickup={kind === 'pickup'} />

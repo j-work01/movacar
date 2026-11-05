@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Offer } from '../data/types.ts'
 import { makeOffer } from '../test/offers.ts'
+import { COLUMN_BY_ID } from './columns.tsx'
+import { describeFilter } from './describeFilter.ts'
 import {
   canPickUpBetween,
+  EITHER_END,
   containsWords,
   filterFromUrl,
   filterToUrl,
@@ -119,5 +122,34 @@ describe('filters in the web address', () => {
     expect(filterFromUrl('dates', ['tomorrow..'])).toBeUndefined()
     expect(filterFromUrl('list', [''])).toBeUndefined()
     expect(filterFromUrl('text', ['  '])).toBeUndefined()
+  })
+})
+
+describe('from or to', () => {
+  /** A trip from one country to another. */
+  const trip = (from: string, to: string) =>
+    ({
+      getValue: (id: string) => (id === 'fromCountry' ? from : to),
+      original: makeOffer('1'),
+    }) as never
+
+  it('keeps trips with a ticked country at either end', () => {
+    const either = ['DE', EITHER_END]
+    expect(inList(trip('DE', 'IT'), 'fromCountry', either)).toBe(true)
+    expect(inList(trip('IT', 'DE'), 'fromCountry', either)).toBe(true)
+    expect(inList(trip('IT', 'FR'), 'fromCountry', either)).toBe(false)
+    // Without the switch, only the start counts.
+    expect(inList(trip('IT', 'DE'), 'fromCountry', ['DE'])).toBe(false)
+  })
+
+  it('reads in a chip and the web address, but not on its own', () => {
+    expect(
+      describeFilter(COLUMN_BY_ID.get('fromCountry')!, ['DE', EITHER_END]),
+    ).toBe('Germany (DE) · or To')
+    expect(filterFromUrl('list', ['DE', EITHER_END])).toEqual([
+      'DE',
+      EITHER_END,
+    ])
+    expect(filterFromUrl('list', [EITHER_END])).toBeUndefined()
   })
 })

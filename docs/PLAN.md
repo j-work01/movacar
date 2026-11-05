@@ -88,6 +88,8 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
   (dates) or "contains" (vehicle, addresses). Filters combine. Active filters show
   as removable chips, with "Clear all". (There was a search box too; it was
   removed, as the column filters cover it.)
+- **From or To:** in the city and country filters, once something is ticked,
+  ☑ "From or To country" (or city) also keeps trips that end there.
 - **Date filter:** on Earliest pick-up, an offer shows if its pick-up window
   overlaps your dates.
 - **Sorting:** one column at a time, ascending or descending. Blanks always go last;

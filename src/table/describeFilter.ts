@@ -2,7 +2,12 @@
 // "From country: Spain (ES), Portugal (PT) +1", "Earliest pick-up: 7–8 Nov".
 
 import { type ColumnConfig, filterKindOf, formatValue } from './columns.tsx'
-import type { DatesValue, ListValue, RangeValue } from './filters.ts'
+import {
+  EITHER_END,
+  type DatesValue,
+  type ListValue,
+  type RangeValue,
+} from './filters.ts'
 
 const dayMonth = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
@@ -29,11 +34,14 @@ function between(
 export function describeFilter(column: ColumnConfig, value: unknown): string {
   switch (filterKindOf(column)) {
     case 'list': {
-      const labels = (value as ListValue).map(
-        (item) => column.optionLabel?.(item) ?? item,
-      )
+      const ticked = (value as ListValue).filter((item) => item !== EITHER_END)
+      const labels = ticked.map((item) => column.optionLabel?.(item) ?? item)
       const extra = labels.length > 2 ? ` +${labels.length - 2}` : ''
-      return labels.slice(0, 2).join(', ') + extra
+      // "From country: Germany (DE) · or To"
+      const either = (value as ListValue).includes(EITHER_END)
+        ? ` · or ${column.id.startsWith('from') ? 'To' : 'From'}`
+        : ''
+      return labels.slice(0, 2).join(', ') + extra + either
     }
     case 'range': {
       const [min, max] = value as RangeValue
