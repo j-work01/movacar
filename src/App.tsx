@@ -234,6 +234,15 @@ export default function App() {
                   </span>
                 </>
               )}
+              <FilterChips
+                columnFilters={columnFilters}
+                onRemoveFilter={(id) =>
+                  setColumnFilters((filters) =>
+                    filters.filter((filter) => filter.id !== id),
+                  )
+                }
+                onClearAll={clearFilters}
+              />
             </div>
           </div>
           <AppMenu
@@ -260,15 +269,6 @@ export default function App() {
             canExport={shown > 0}
           />
         </div>
-        <FilterChips
-          columnFilters={columnFilters}
-          onRemoveFilter={(id) =>
-            setColumnFilters((filters) =>
-              filters.filter((filter) => filter.id !== id),
-            )
-          }
-          onClearAll={clearFilters}
-        />
         {data.kind === 'loaded' && data.status && (
           <RefreshNotes status={data.status} now={now} />
         )}
