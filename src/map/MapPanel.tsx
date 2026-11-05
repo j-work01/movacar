@@ -11,10 +11,13 @@ const dot = 'inline-block size-2 shrink-0 rounded-full'
 function MapNote({
   city,
   route,
+  routeOffers,
   onClear,
 }: {
   city: City | undefined
   route: Route | undefined
+  /** For a tapped line: how many offers it has. */
+  routeOffers?: number
   onClear: () => void
 }) {
   const box =
@@ -51,6 +54,8 @@ function MapNote({
               className={`${dot} mr-1 bg-zinc-900 dark:bg-white`}
             />
             {route.from.name} → {route.to.name}
+            {routeOffers !== undefined &&
+              ` · ${routeOffers} ${routeOffers === 1 ? 'offer' : 'offers'}`}
           </p>
         )}
       </div>
@@ -72,6 +77,7 @@ export function MapPanel({
   routes,
   picked,
   onPickCity,
+  onPickRoute,
   onClear,
   dark,
 }: {
@@ -79,13 +85,16 @@ export function MapPanel({
   routes: readonly Route[]
   picked: Selection
   onPickCity: (key: string | null) => void
+  onPickRoute: (key: string) => void
   onClear: () => void
   dark: boolean
 }) {
   const city = cities.find((c) => c.key === picked.city)
   const route = picked.offer
     ? routes.find((r) => r.offers.some((o) => o.id === picked.offer))
-    : undefined
+    : picked.route
+      ? routes.find((r) => r.key === picked.route)
+      : undefined
   return (
     <div className="relative h-full">
       <Suspense
@@ -100,11 +109,17 @@ export function MapPanel({
           routes={routes}
           picked={picked}
           onPickCity={onPickCity}
+          onPickRoute={onPickRoute}
           dark={dark}
         />
       </Suspense>
       <div className="pointer-events-none absolute top-2 left-2 z-10 max-w-[calc(100%-3.5rem)]">
-        <MapNote city={city} route={route} onClear={onClear} />
+        <MapNote
+          city={city}
+          route={route}
+          routeOffers={picked.offer ? undefined : route?.offers.length}
+          onClear={onClear}
+        />
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 import type { OffersFile, RefreshStatus } from './data/types.ts'
-import type { City, Selection } from './map/routes.ts'
+import type { City, Route, Selection } from './map/routes.ts'
 import { makeOffer, station } from './test/offers.ts'
 
 // The real map needs WebGL, which tests don't have. This stand-in has a
@@ -11,12 +11,16 @@ import { makeOffer, station } from './test/offers.ts'
 vi.mock('./map/RoutesMap.tsx', () => ({
   default: ({
     cities,
+    routes,
     picked,
     onPickCity,
+    onPickRoute,
   }: {
     cities: City[]
+    routes: Route[]
     picked: Selection
     onPickCity: (key: string | null) => void
+    onPickRoute: (key: string) => void
   }) => (
     <div data-testid="map" data-picked-offer={picked.offer ?? ''}>
       {cities.map((city) => (
@@ -26,6 +30,15 @@ vi.mock('./map/RoutesMap.tsx', () => ({
           onClick={() => onPickCity(city.key)}
         >
           {`Pick ${city.name}`}
+        </button>
+      ))}
+      {routes.map((route) => (
+        <button
+          key={route.key}
+          type="button"
+          onClick={() => onPickRoute(route.key)}
+        >
+          {`Pick ${route.from.name} → ${route.to.name}`}
         </button>
       ))}
       <button type="button" onClick={() => onPickCity(null)}>
@@ -376,6 +389,25 @@ describe('the map', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tap the map' }))
     expect(marks()).toEqual([null, null, null])
     expect(fromColumn()).toEqual(['Madrid', 'München', 'Mannheim'])
+  })
+
+  it('lights up the offers of a tapped line in the table, first', async () => {
+    localStorage.setItem('movacar-board.map', '25')
+    serve({ status: OK, offers: MAP_OFFERS })
+    render(<App />)
+    await dataLine()
+    const line = await screen.findByRole('button', {
+      name: 'Pick München → Madrid',
+    })
+    await userEvent.click(line)
+    expect(fromColumn()).toEqual(['München', 'Madrid', 'Mannheim'])
+    expect(marks()).toEqual(['route', null, null])
+    expect(screen.getByText(/^München → Madrid/).textContent).toBe(
+      'München → Madrid · 1 offer',
+    )
+    // Tap it again to let go.
+    await userEvent.click(line)
+    expect(marks()).toEqual([null, null, null])
   })
 
   it('lights up the route of a tapped row on the map', async () => {

@@ -133,14 +133,22 @@ export default function App() {
     map.offers.some((offer) => offer.id === picked.offer)
       ? picked.offer
       : null
+  const pickedRoute =
+    mapSize > 0 &&
+    picked.route &&
+    map.routes.some((route) => route.key === picked.route)
+      ? picked.route
+      : null
   const shownPick = useMemo(
-    () => ({ city: pickedCity, offer: pickedOffer }),
-    [pickedCity, pickedOffer],
+    () => ({ city: pickedCity, offer: pickedOffer, route: pickedRoute }),
+    [pickedCity, pickedOffer, pickedRoute],
   )
   const mark = useMemo(
     () =>
-      pickedCity ? (offer: Offer) => rowMark(offer, pickedCity) : undefined,
-    [pickedCity],
+      pickedCity || pickedRoute
+        ? (offer: Offer) => rowMark(offer, pickedCity, pickedRoute)
+        : undefined,
+    [pickedCity, pickedRoute],
   )
   // Tapping a city picks it, or lets go of it; tapping the map lets go of all.
   const pickCity = useCallback(
@@ -161,6 +169,16 @@ export default function App() {
     [],
   )
   const clearPicked = useCallback(() => setPicked(NOTHING_PICKED), [])
+  // Tapping a line picks its route, or lets go of it.
+  const pickRoute = useCallback(
+    (key: string) =>
+      setPicked((current) => ({
+        ...current,
+        offer: null,
+        route: current.route === key ? null : key,
+      })),
+    [],
+  )
 
   const share = async () => {
     const url = window.location.href
@@ -261,6 +279,7 @@ export default function App() {
               routes={map.routes}
               picked={shownPick}
               onPickCity={pickCity}
+              onPickRoute={pickRoute}
               onClear={clearPicked}
               dark={dark}
             />
@@ -280,7 +299,7 @@ export default function App() {
                 </>
               }
               mark={mark}
-              markKey={pickedCity}
+              markKey={`${pickedCity}|${pickedRoute}`}
               chosenId={pickedOffer}
               onRowClick={mapSize > 0 ? pickOffer : undefined}
             />

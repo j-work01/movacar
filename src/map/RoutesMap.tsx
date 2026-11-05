@@ -332,11 +332,26 @@ function cityAt(map: MapLibre, x: number, y: number) {
   return onTop ?? nearest
 }
 
+/** The line at this point, if one is close by: lit-up lines first. */
+function routeAt(map: MapLibre, x: number, y: number) {
+  const near = map.queryRenderedFeatures(
+    [
+      [x - 6, y - 6],
+      [x + 6, y + 6],
+    ],
+    { layers: ['route-lines'] },
+  )
+  return near.sort(
+    (a, b) => Number(b.properties.rank) - Number(a.properties.rank),
+  )[0]
+}
+
 export default function RoutesMap({
   cities,
   routes,
   picked,
   onPickCity,
+  onPickRoute,
   dark,
 }: {
   cities: readonly City[]
@@ -344,6 +359,8 @@ export default function RoutesMap({
   picked: Selection
   /** A city was tapped, or null for a tap on the map itself. */
   onPickCity: (key: string | null) => void
+  /** A line was tapped. */
+  onPickRoute: (key: string) => void
   dark: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -362,9 +379,10 @@ export default function RoutesMap({
   )
 
   // The latest props, for the map's own event handlers.
-  const latest = useRef({ cities, routes, lines, picked, onPickCity, dark })
+  const props = { cities, routes, lines, picked, onPickCity, onPickRoute, dark }
+  const latest = useRef(props)
   useLayoutEffect(() => {
-    latest.current = { cities, routes, lines, picked, onPickCity, dark }
+    latest.current = props
   })
 
   /** Draws the current routes and what's picked. */
@@ -449,8 +467,13 @@ export default function RoutesMap({
     // Tap a city to pick it; tap elsewhere to let go.
     map.on('click', (event: MapMouseEvent) => {
       if (!readyRef.current) return
-      const city = cityAt(map, event.point.x, event.point.y)
-      latest.current.onPickCity(city ? String(city.properties.key) : null)
+      const { x, y } = event.point
+      const city = cityAt(map, x, y)
+      if (city) return latest.current.onPickCity(String(city.properties.key))
+      // Not a city: perhaps a line, else the map itself (lets go of all).
+      const line = routeAt(map, x, y)
+      if (line) return latest.current.onPickRoute(String(line.properties.key))
+      latest.current.onPickCity(null)
     })
 
     // With a mouse: the name and numbers of the city a click would pick.
@@ -465,7 +488,11 @@ export default function RoutesMap({
         const city = readyRef.current
           ? cityAt(map, event.point.x, event.point.y)
           : undefined
-        map.getCanvas().style.cursor = city ? 'pointer' : ''
+        const line =
+          readyRef.current && !city
+            ? routeAt(map, event.point.x, event.point.y)
+            : undefined
+        map.getCanvas().style.cursor = city || line ? 'pointer' : ''
         if (!city) {
           popup.remove()
           return

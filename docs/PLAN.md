@@ -122,6 +122,8 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
     fades. In the table, its offers light up in the same colours and come first.
   - Tap a row: its route lights up on the map (black, or white in dark mode), and
     the map moves to show it.
+  - Tap a line: it turns black, and its offers light up in yellow at the top
+    of the table. Tap it again to let go.
   - Background: OpenFreeMap's calm grey map, or its dark one in dark mode. Free,
     no account. If it can't be reached, the routes show on a plain background.
   - It first shows where most offers are, without the few farthest ones (like
@@ -157,7 +159,6 @@ On hold (explained, not wanted for now):
   runs, read from GitHub's public API.
 - **Phone polish:** tap a row for all its details, a shorter header, a home-screen
   icon, filters that slide up from the bottom, an optional fixed From column.
-- **Tap a line on the map** to list its offers.
 
 ## Not planned
 

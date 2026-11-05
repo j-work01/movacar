@@ -76,7 +76,7 @@ export function OffersTable({
    * then those arriving there, come first.
    */
   mark?: (offer: Offer) => RowMark
-  /** Which city is marked; a new one scrolls back to the top. */
+  /** What is marked; something new scrolls back to the top. */
   markKey?: string | null
   /** The offer whose route the map shows. */
   chosenId?: string | null
@@ -217,7 +217,7 @@ export function OffersTable({
                 className={cn(
                   // Lit up like its route on the map: blue leaving, orange
                   // arriving, yellow for the one tapped.
-                  chosen
+                  chosen || rowMark === 'route'
                     ? 'bg-yellow-100 dark:bg-yellow-900/50'
                     : rowMark === 'leaving'
                       ? 'bg-blue-100 dark:bg-blue-950'
