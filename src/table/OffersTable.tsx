@@ -25,12 +25,12 @@ const alignsEnd = (columnId: string) => {
  * don't reliably apply widths to table cells themselves.
  */
 const TEXT_WIDTH: Record<string, string> = {
-  from: 'w-40',
-  to: 'w-40',
-  vehicle: 'w-60',
-  category: 'w-44',
-  fromAddress: 'w-64',
-  toAddress: 'w-64',
+  from: 'min-w-40',
+  to: 'min-w-40',
+  vehicle: 'min-w-60',
+  category: 'min-w-44',
+  fromAddress: 'min-w-64',
+  toAddress: 'min-w-64',
 }
 
 /** A one-line row's height. Rows are measured once drawn, for wrapped text. */
@@ -253,7 +253,15 @@ export function OffersTable({
                     >
                       {width ? (
                         <div
-                          className={cn(width, !wrap && 'truncate')}
+                          className={cn(
+                            // At least this wide, and wider when the table
+                            // stretches to fill a wide screen. (Its text
+                            // doesn't widen the column: that would jump
+                            // while scrolling.)
+                            'w-full [contain:inline-size]',
+                            width,
+                            !wrap && 'truncate',
+                          )}
                           title={tooltip}
                         >
                           <FlexRender cell={cell} />

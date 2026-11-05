@@ -186,10 +186,10 @@ describe('the menu', () => {
       'Wrap text',
       // The map's size: one row of buttons.
       'Off',
-      '20',
-      '40',
-      '60',
-      '80',
+      '10',
+      '25',
+      '50',
+      '75',
       '100',
       'Share this view',
       'Clear filters',
@@ -325,15 +325,15 @@ describe('the map', () => {
     ).toHaveProperty('ariaChecked', 'true')
     await userEvent.click(
       within(menu).getByRole('menuitemradio', {
-        name: 'Map 60% of the screen',
+        name: 'Map 50% of the screen',
       }),
     )
     expect(screen.getByRole('region', { name: 'Map' }).style.flexBasis).toBe(
-      '60%',
+      '50%',
     )
     expect(await screen.findByTestId('map')).toBeTruthy()
     expect(screen.getByRole('table')).toBeTruthy()
-    expect(localStorage.getItem('movacar-board.map')).toBe('60')
+    expect(localStorage.getItem('movacar-board.map')).toBe('50')
 
     // All of the screen: no table.
     menu = await openMenu()
@@ -354,7 +354,7 @@ describe('the map', () => {
   })
 
   it('lights up the offers of a tapped city in the table, leaving first', async () => {
-    localStorage.setItem('movacar-board.map', '40')
+    localStorage.setItem('movacar-board.map', '25')
     serve({ status: OK, offers: MAP_OFFERS })
     render(<App />)
     await dataLine()
@@ -379,7 +379,7 @@ describe('the map', () => {
   })
 
   it('lights up the route of a tapped row on the map', async () => {
-    localStorage.setItem('movacar-board.map', '40')
+    localStorage.setItem('movacar-board.map', '25')
     serve({ status: OK, offers: MAP_OFFERS })
     render(<App />)
     await dataLine()
