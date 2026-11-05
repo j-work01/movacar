@@ -161,8 +161,7 @@ On hold (explained, not wanted for now):
 
 - **Live refresh message:** "Refresh started … ago. Refreshing…" while a refresh
   runs, read from GitHub's public API.
-- **Phone polish:** tap a row for all its details, a shorter header, a home-screen
-  icon, filters that slide up from the bottom, an optional fixed From column.
+- **Phone polish:** tap a row for all its details, filters that slide up from the bottom, an optional fixed From column.
 
 ## Not planned
 

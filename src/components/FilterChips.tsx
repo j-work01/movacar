@@ -36,7 +36,7 @@ export function FilterChips({
   return (
     <ul
       aria-label="Active filters"
-      className="flex items-center gap-2 overflow-x-auto px-4 pb-2 sm:flex-wrap"
+      className="flex shrink-0 items-center gap-2"
     >
       {chips.map((chip) => (
         <li
