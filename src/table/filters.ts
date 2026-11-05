@@ -17,6 +17,21 @@ export type FilterKind = 'list' | 'range' | 'dates' | 'pickup' | 'text'
 
 /** Values to keep; an offer matching any of them stays. */
 export type ListValue = string[]
+
+/**
+ * In a place's tick-list (city or country), this extra value means "at
+ * either end": the ticked places count as the start or the end of the trip,
+ * so "From country: Germany" also keeps trips to Germany.
+ */
+export const EITHER_END = '*either'
+
+/** The column for the other end of the trip. */
+export const OTHER_END: Record<string, string> = {
+  from: 'to',
+  to: 'from',
+  fromCountry: 'toCountry',
+  toCountry: 'fromCountry',
+}
 /** Lowest and highest value to keep; either may be missing. */
 export type RangeValue = [min: number | undefined, max: number | undefined]
 /** First and last day (YYYY-MM-DD, Dutch/German calendar); either may be missing. */
@@ -39,10 +54,19 @@ const isEmptyPair = (value: unknown) =>
   !Array.isArray(value) || (value[0] === undefined && value[1] === undefined)
 
 export const inList: Fn = Object.assign(
-  (row: Parameters<Fn>[0], id: string, selected: ListValue) =>
-    selected.includes(String(row.getValue(id))),
+  (row: Parameters<Fn>[0], id: string, selected: ListValue) => {
+    if (selected.includes(String(row.getValue(id)))) return true
+    const other = OTHER_END[id]
+    return (
+      Boolean(other) &&
+      selected.includes(EITHER_END) &&
+      selected.includes(String(row.getValue(other)))
+    )
+  },
   {
-    autoRemove: (value: unknown) => !Array.isArray(value) || value.length === 0,
+    // Nothing ticked: the "either end" switch alone doesn't count.
+    autoRemove: (value: unknown) =>
+      !Array.isArray(value) || !value.some((item) => item !== EITHER_END),
   },
 )
 
@@ -139,7 +163,7 @@ export function filterFromUrl(
   if (entries.length === 0) return undefined
   if (kind === 'list') {
     const values = entries.filter(Boolean)
-    return values.length > 0 ? values : undefined
+    return values.some((value) => value !== EITHER_END) ? values : undefined
   }
   if (kind === 'text') return entries[0].trim() || undefined
 
