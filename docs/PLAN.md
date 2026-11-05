@@ -112,7 +112,7 @@ calendar ends on `latest_pickup`, and "Latest Delivery" is `end_date`. Details i
 - **Errors:** if the last refresh failed, a note says so and shows how old the data is.
 - **Phone:** the same table, swiped sideways, with no fixed column for now.
 - **Map (☰ → Map):** off by default. When on, it sits above the table and takes
-  20–100% of the screen (100% hides the table); each device remembers the size.
+  10–100% of the screen (100% hides the table); each device remembers the size.
   Its code only loads when it's turned on.
   - It shows what the table shows: the same filters, one line per route (city to
     city), thicker with more offers.
