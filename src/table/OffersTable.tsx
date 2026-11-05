@@ -1,8 +1,10 @@
 import { FlexRender } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, type ReactNode } from 'react'
+import type { Offer } from '../data/types.ts'
 import { cn } from '../lib/cn.ts'
+import { liftMarked, type RowMark } from '../map/routes.ts'
 import { ColumnFilter } from './ColumnFilter.tsx'
 import { COLUMN_BY_ID } from './columns.tsx'
 import type { OffersTableInstance } from './useOffersTable.ts'
@@ -59,15 +61,35 @@ export function OffersTable({
   table,
   wrap = false,
   emptyMessage,
+  mark,
+  markKey = null,
+  chosenId = null,
+  onRowClick,
 }: {
   table: OffersTableInstance
   /** Wrap long text over several lines instead of cutting it off. */
   wrap?: boolean
   /** Shown instead of rows when nothing matches. */
   emptyMessage?: ReactNode
+  /**
+   * Lights up the offers of a city picked on the map: those leaving from it,
+   * then those arriving there, come first.
+   */
+  mark?: (offer: Offer) => RowMark
+  /** Which city is marked; a new one scrolls back to the top. */
+  markKey?: string | null
+  /** The offer whose route the map shows. */
+  chosenId?: string | null
+  /** Tapping a row (when the map is on). */
+  onRowClick?: (offer: Offer) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const rows = table.getRowModel().rows
+  const sortedRows = table.getRowModel().rows
+  const rows = useMemo(
+    () =>
+      mark ? liftMarked(sortedRows, (row) => mark(row.original)) : sortedRows,
+    [sortedRows, mark],
+  )
   const headerGroups = table.getHeaderGroups()
   const columnCount = headerGroups[0]?.headers.length ?? 1
 
@@ -88,8 +110,12 @@ export function OffersTable({
       ? virtualizer.getTotalSize() - items[items.length - 1].end
       : 0
 
-  // After a new sort or filter, show the top of the list.
-  const view = JSON.stringify([table.state.sorting, table.state.columnFilters])
+  // After a new sort, filter or city on the map, show the top of the list.
+  const view = JSON.stringify([
+    table.state.sorting,
+    table.state.columnFilters,
+    markKey,
+  ])
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [view])
@@ -168,17 +194,44 @@ export function OffersTable({
           <Spacer height={spaceAbove} columns={columnCount} />
           {items.map((item) => {
             const row = rows[item.index]
+            const rowMark = mark?.(row.original) ?? null
+            const chosen = chosenId === row.original.id
             return (
               <tr
                 key={row.id}
                 data-index={item.index}
                 ref={virtualizer.measureElement}
                 aria-rowindex={item.index + 2}
+                data-mark={rowMark ?? undefined}
+                data-chosen={chosen || undefined}
+                onClick={
+                  onRowClick &&
+                  ((event) => {
+                    // Not when opening the link, or selecting text to copy.
+                    if ((event.target as HTMLElement).closest('a, button'))
+                      return
+                    if (window.getSelection()?.toString()) return
+                    onRowClick(row.original)
+                  })
+                }
                 className={cn(
-                  // Every other row is shaded, by position in the list (the
-                  // drawn rows change while scrolling, so CSS can't count them).
-                  item.index % 2 === 1 && 'bg-zinc-100/70 dark:bg-zinc-900',
-                  'hover:bg-blue-50 dark:hover:bg-zinc-800',
+                  // Lit up like its route on the map: blue leaving, orange
+                  // arriving, yellow for the one tapped.
+                  chosen
+                    ? 'bg-yellow-100 dark:bg-yellow-900/50'
+                    : rowMark === 'leaving'
+                      ? 'bg-blue-100 dark:bg-blue-950'
+                      : rowMark === 'arriving'
+                        ? 'bg-orange-100 dark:bg-orange-950/70'
+                        : // Every other row is shaded, by position in the list
+                          // (the drawn rows change while scrolling, so CSS
+                          // can't count them).
+                          cn(
+                            item.index % 2 === 1 &&
+                              'bg-zinc-100/70 dark:bg-zinc-900',
+                            'hover:bg-blue-50 dark:hover:bg-zinc-800',
+                          ),
+                  onRowClick && 'cursor-pointer',
                 )}
               >
                 {row.getVisibleCells().map((cell) => {

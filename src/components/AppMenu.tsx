@@ -5,6 +5,7 @@ import {
   ExternalLink,
   FunnelX,
   Info,
+  Map as MapIcon,
   Menu,
   RefreshCw,
   Share2,
@@ -14,6 +15,10 @@ import {
 import { DropdownMenu } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { REFRESH_URL, REPO_URL } from '../links.ts'
+import { MAP_SIZES, mapSizeName, type MapSize } from '../map/settings.ts'
+
+const panel =
+  'z-30 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-900 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'
 
 const item =
   'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm outline-none select-none data-[disabled]:cursor-default data-[disabled]:opacity-40 data-[highlighted]:bg-zinc-100 dark:data-[highlighted]:bg-zinc-800'
@@ -57,6 +62,8 @@ export function AppMenu({
   onColumns,
   wrap,
   onWrapChange,
+  mapSize,
+  onMapSizeChange,
   onShare,
   onClearFilters,
   canClearFilters,
@@ -66,6 +73,8 @@ export function AppMenu({
   onColumns: () => void
   wrap: boolean
   onWrapChange: (wrap: boolean) => void
+  mapSize: MapSize
+  onMapSizeChange: (size: MapSize) => void
   onShare: () => void
   onClearFilters: () => void
   canClearFilters: boolean
@@ -84,7 +93,7 @@ export function AppMenu({
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-30 min-w-60 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-900 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className={`${panel} min-w-60`}
         >
           <DropdownMenu.Item className={item} onSelect={onColumns}>
             <Label icon={Columns3}>Columns…</Label>
@@ -99,6 +108,29 @@ export function AppMenu({
               <Check aria-hidden className="size-4 text-blue-700" />
             </DropdownMenu.ItemIndicator>
           </DropdownMenu.CheckboxItem>
+          {/* Off, or how much of the screen the map takes: one row of
+              buttons, which fits a phone better than a submenu. */}
+          <DropdownMenu.Label className="flex items-center gap-2.5 px-2.5 pt-2 pb-1.5 text-sm">
+            <MapIcon aria-hidden className="size-4 shrink-0 text-zinc-500" />
+            <span className="flex-1">Map</span>
+            <span className="text-xs text-zinc-500">% of the screen</span>
+          </DropdownMenu.Label>
+          <DropdownMenu.RadioGroup
+            value={String(mapSize)}
+            onValueChange={(value) => onMapSizeChange(Number(value) as MapSize)}
+            className="flex gap-1 px-2 pb-1.5"
+          >
+            {MAP_SIZES.map((size) => (
+              <DropdownMenu.RadioItem
+                key={size}
+                value={String(size)}
+                aria-label={mapSizeName(size)}
+                className="flex-1 cursor-pointer rounded-md border border-zinc-200 py-1.5 text-center text-xs outline-none select-none data-[highlighted]:bg-zinc-100 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-50 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 dark:border-zinc-700 dark:data-[highlighted]:bg-zinc-800 dark:data-[state=checked]:border-blue-400 dark:data-[state=checked]:bg-blue-950 dark:data-[state=checked]:text-blue-200"
+              >
+                {size === 0 ? 'Off' : size}
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
           <DropdownMenu.Separator className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />
           <DropdownMenu.Item className={item} onSelect={onShare}>
             <Label icon={Share2}>Share this view</Label>

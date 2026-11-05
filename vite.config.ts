@@ -8,6 +8,11 @@ export default defineConfig({
   // (GitHub Pages serves it from /movacar/).
   base: './',
   plugins: [react(), tailwindcss()],
+  build: {
+    // The map library is one big file (about 290 kB zipped). It loads only
+    // when the map is turned on, so its size doesn't slow down the table.
+    chunkSizeWarningLimit: 1200,
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],

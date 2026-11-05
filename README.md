@@ -2,7 +2,7 @@
 
 A sortable, filterable overview of [Movacar](https://movacar.com) one-way transfer
 offers: cars, vans and campers that need to be moved from A to B. It works on a
-laptop and on a phone.
+laptop and on a phone. ☰ → **Map** shows the routes on a map as well.
 
 **Live site:** https://j-work01.github.io/movacar/
 
@@ -36,6 +36,9 @@ GitHub Pages  the website, which loads one small data file
 ```
 
 - **Website:** React + TypeScript, built with Vite, styled with Tailwind CSS.
+- **Map:** MapLibre, on background maps from [OpenFreeMap](https://openfreemap.org)
+  (free, no account or key; map data © OpenStreetMap contributors). The map's
+  code only loads when the map is turned on.
 - **Data refresh:** a TypeScript script run by GitHub Actions.
 - **Checks:** every pull request is formatted, linted, tested and built before
   it can be merged. Every change on `main` goes live automatically.
