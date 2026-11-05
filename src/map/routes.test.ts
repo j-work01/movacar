@@ -170,6 +170,27 @@ describe('the table', () => {
     expect(rowMark(offers[0], null)).toBeNull()
   })
 
+  it("marks a tapped line's offers, and lists them first", () => {
+    const marks = offers.map((o) => rowMark(o, 'München', 'München>Lisbon'))
+    expect(marks).toEqual([null, 'arriving', 'leaving', 'route'])
+    const lifted = liftMarked(offers, (o) =>
+      rowMark(o, 'München', 'München>Lisbon'),
+    )
+    expect(lifted.map((o) => o.id)).toEqual(['4', '3', '2', '1'])
+    const { routes } = buildRoutes(offers)
+    const look = looksFor(routes, {
+      city: null,
+      offer: null,
+      route: 'München>Lisbon',
+    })
+    expect(routes.map(look.route)).toEqual([
+      'faint',
+      'faint',
+      'faint',
+      'chosen',
+    ])
+  })
+
   it('lists them first: leaving, then arriving, then the rest', () => {
     const lifted = liftMarked(offers, (o) => rowMark(o, 'München'))
     expect(lifted.map((o) => o.id)).toEqual(['3', '4', '2', '1'])

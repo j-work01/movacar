@@ -137,13 +137,19 @@ export function curve(
   return line
 }
 
-/** What is picked: a city on the map, and/or an offer in the table. */
+/** What is picked: a city or a line on the map, and/or an offer in the table. */
 export interface Selection {
   city: string | null
   offer: string | null
+  /** A route (its key) whose line was tapped. */
+  route?: string | null
 }
 
-export const NOTHING_PICKED: Selection = { city: null, offer: null }
+export const NOTHING_PICKED: Selection = {
+  city: null,
+  offer: null,
+  route: null,
+}
 
 /** How a route is drawn: as usual, lit up, or faded behind what's picked. */
 export type Look = 'normal' | 'leaving' | 'arriving' | 'chosen' | 'faint'
@@ -171,7 +177,9 @@ export function looksFor(
   // An offer within one city has no line, so it changes nothing here.
   const chosen = picked.offer
     ? routes.find((r) => r.offers.some((o) => o.id === picked.offer))
-    : undefined
+    : picked.route
+      ? routes.find((r) => r.key === picked.route)
+      : undefined
   const anything = Boolean(picked.city || chosen)
   const route = (r: Route): Look => {
     if (r === chosen) return 'chosen'
@@ -202,10 +210,18 @@ export function looksFor(
   return { route, city }
 }
 
-/** In the table: does this offer leave from, or arrive at, the picked city? */
-export type RowMark = 'leaving' | 'arriving' | null
+/**
+ * In the table: is this offer on the tapped line, or does it leave from or
+ * arrive at the picked city?
+ */
+export type RowMark = 'route' | 'leaving' | 'arriving' | null
 
-export function rowMark(offer: Offer, city: string | null): RowMark {
+export function rowMark(
+  offer: Offer,
+  city: string | null,
+  route: string | null = null,
+): RowMark {
+  if (route && routeKey(offer) === route) return 'route'
   if (!city) return null
   if (cityKey(offer.from) === city) return 'leaving'
   if (cityKey(offer.to) === city) return 'arriving'
@@ -220,16 +236,18 @@ export function liftMarked<T>(
   items: readonly T[],
   markOf: (item: T) => RowMark,
 ): T[] {
+  const route: T[] = []
   const leaving: T[] = []
   const arriving: T[] = []
   const rest: T[] = []
   for (const item of items) {
     const mark = markOf(item)
-    if (mark === 'leaving') leaving.push(item)
+    if (mark === 'route') route.push(item)
+    else if (mark === 'leaving') leaving.push(item)
     else if (mark === 'arriving') arriving.push(item)
     else rest.push(item)
   }
-  return [...leaving, ...arriving, ...rest]
+  return [...route, ...leaving, ...arriving, ...rest]
 }
 
 /**
